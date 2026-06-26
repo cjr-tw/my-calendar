@@ -189,6 +189,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
     <button class="topbar-btn" onclick="openExportModal()">⬇ 匯出</button>
     <button class="topbar-btn" onclick="openImportModal()">⬆ 匯入</button>
     <button class="topbar-btn" onclick="openCatModal()">🏷 類別管理</button>
+    <button class="topbar-btn" onclick="clearAllData()" style="color:#dc2626;border-color:#fca5a5">🗑 清空資料</button>
     <button class="topbar-btn primary" onclick="openEventModal(null,null)">＋ 新增事件</button>
   </div>
 
@@ -465,17 +466,9 @@ let categories = [
   {id:'task',name:'待辦',bg:'#d97706',text:'#ffffff'},
 ];
 
-let events = [
-  {id:'WORK-001',title:'週報提交',cat:'work',allday:false,start:'2026-06-26T10:00',end:'2026-06-26T11:00',notif:true,notifBefore:30,note:'',recurId:null},
-  {id:'TASK-001',title:'下載公保繳費',cat:'task',allday:true,start:'2026-06-05',end:'2026-06-05',notif:true,notifBefore:1440,note:'',recurId:'REC-001'},
-  {id:'TASK-002',title:'下載公保繳費',cat:'task',allday:true,start:'2026-07-07',end:'2026-07-07',notif:true,notifBefore:1440,note:'每月5號，遇假延後',recurId:'REC-001'},
-  {id:'FAMILY-001',title:'家庭聚餐',cat:'family',allday:false,start:'2026-06-28T18:00',end:'2026-06-28T21:00',notif:true,notifBefore:60,note:'',recurId:null},
-  {id:'HEALTH-001',title:'健康檢查',cat:'health',allday:true,start:'2026-07-10',end:'2026-07-12',notif:true,notifBefore:1440,note:'',recurId:null},
-];
+let events = [];
 
-let recurrences = [
-  {id:'REC-001',baseTitle:'下載公保繳費',cat:'task',interval:1,unit:'month',holiday:'after',until:'2027-12-31',count:null}
-];
+let recurrences = [];
 
 let activeFilter = new Set(categories.map(c=>c.id));
 let currentYear, currentMonth, currentView='month';
@@ -484,6 +477,23 @@ let importData = null;
 const PALETTE = ['#2563eb','#7c3aed','#059669','#dc2626','#d97706','#0891b2','#db2777','#65a30d','#ea580c','#6b7280','#1d4ed8','#7e22ce','#047857','#991b1b','#92400e'];
 let selectedColor = PALETTE[0];
 let acIndex = -1;
+
+// ─── Clear All ────────────────────────────────────────────
+function clearAllData(){
+  if(!confirm('確定要清空所有事件與類別嗎？\n此動作無法復原，建議先匯出備份。')) return;
+  events=[];
+  recurrences=[];
+  categories=[
+    {id:'work',name:'工作',bg:'#2563eb',text:'#ffffff'},
+    {id:'family',name:'家庭',bg:'#059669',text:'#ffffff'},
+    {id:'personal',name:'個人',bg:'#7c3aed',text:'#ffffff'},
+    {id:'health',name:'健康',bg:'#dc2626',text:'#ffffff'},
+    {id:'task',name:'待辦',bg:'#d97706',text:'#ffffff'},
+  ];
+  activeFilter=new Set(categories.map(c=>c.id));
+  save();buildCatSelect();render();
+  toast('已清空所有資料');
+}
 
 // ─── Init ────────────────────────────────────────────────
 function init(){
