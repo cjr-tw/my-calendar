@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行事曆系統</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f8fa;--surface:#fff;--border:#e4e6ea;--border2:#c8ccd4;
+  --text:#1a1d23;--text2:#5a6072;--text3:#9aa0b0;
+  --blue:#2563eb;--blue-bg:#eff4ff;
+  --radius:8px;--radius-lg:12px;
+  --shadow:0 1px 4px rgba(0,0,0,.08);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang TC','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+a{color:var(--blue);text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:14px}
+
+/* Layout */
+.app{display:flex;flex-direction:column;height:100vh}
+.topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.topbar h1{font-size:16px;font-weight:600;color:var(--text)}
+.topbar .logo{width:28px;height:28px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0}
+.topbar .spacer{flex:1}
+.topbar-btn{padding:5px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:13px;display:flex;align-items:center;gap:5px}
+.topbar-btn:hover{background:var(--bg)}
+.topbar-btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.topbar-btn.primary:hover{background:#1d4ed8}
+
+.main{display:flex;flex:1;overflow:hidden}
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:12px 0}
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+
+/* Sidebar */
+.sidebar-section{padding:4px 12px 8px}
+.sidebar-section h3{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;padding-left:4px}
+.cat-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;user-select:none}
+.cat-item:hover{background:var(--bg)}
+.cat-check{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;transition:all .15s}
+.cat-check.on{border-color:transparent}
+.cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.cat-name{font-size:13px;color:var(--text);flex:1}
+.cat-count{font-size:11px;color:var(--text3);min-width:16px;text-align:right}
+.cat-add-btn{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;color:var(--text3);font-size:13px;cursor:pointer;width:100%;background:none;border:none;margin-top:4px}
+.cat-add-btn:hover{background:var(--bg);color:var(--text2)}
+
+.sidebar-section2{padding:8px 12px;border-top:1px solid var(--border);margin-top:8px}
+.mini-action{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;color:var(--text2);font-size:13px;cursor:pointer;width:100%;background:none;border:none}
+.mini-action:hover{background:var(--bg)}
+.mini-action svg{width:15px;height:15px;opacity:.7}
+
+/* Calendar header */
+.cal-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.month-nav{display:flex;align-items:center;gap:4px}
+.month-nav button{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:16px;display:flex;align-items:center;justify-content:center}
+.month-nav button:hover{background:var(--bg)}
+.month-label{font-size:16px;font-weight:600;min-width:110px;text-align:center}
+.today-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:12px}
+.today-btn:hover{background:var(--bg)}
+.view-btns{display:flex;gap:2px;margin-left:auto}
+.view-btn{padding:4px 10px;border-radius:6px;border:1px solid transparent;background:none;color:var(--text2);font-size:12px}
+.view-btn.active{background:var(--blue-bg);color:var(--blue);border-color:#bfdbfe}
+.view-btn:hover:not(.active){background:var(--bg)}
+
+/* Calendar grid */
+.cal-grid-wrap{flex:1;overflow-y:auto}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-day-header{padding:6px 4px;text-align:center;font-size:11px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:2}
+.cal-cell{min-height:90px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:4px;position:relative;cursor:pointer;transition:background .1s}
+.cal-cell:nth-child(7n){border-right:none}
+.cal-cell:hover{background:#f0f4ff}
+.cal-cell.other{background:#fafbfc}
+.cal-cell.other .day-num{opacity:.3}
+.cal-cell.today .day-num{background:var(--blue);color:#fff;border-radius:50%}
+.cal-cell.today{background:#f8faff}
+.day-num{width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;margin-bottom:2px;border-radius:50%}
+.ev-chip{border-radius:3px;padding:1px 5px 1px 4px;font-size:11px;font-weight:500;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:3px;cursor:pointer}
+.ev-chip .notif-dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.8);flex-shrink:0}
+.ev-chip .ev-num{font-size:9px;opacity:.75;font-weight:400}
+.more-link{font-size:10px;color:var(--text3);padding:1px 4px;cursor:pointer}
+.more-link:hover{color:var(--blue)}
+
+/* List view */
+.list-view{padding:16px;overflow-y:auto;flex:1}
+.list-date-group{margin-bottom:16px}
+.list-date-label{font-size:12px;font-weight:600;color:var(--text3);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.list-date-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.list-ev{display:flex;align-items:stretch;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);margin-bottom:6px;overflow:hidden;cursor:pointer}
+.list-ev:hover{border-color:var(--blue);box-shadow:0 0 0 2px #dbeafe}
+.list-ev .color-bar{width:5px;flex-shrink:0}
+.list-ev-body{padding:8px 12px;flex:1}
+.list-ev-title{font-size:13px;font-weight:500;margin-bottom:3px;display:flex;align-items:center;gap:6px}
+.list-ev-meta{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:10px}
+.notif-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;background:#fff7ed;color:#c2410c;padding:1px 5px;border-radius:10px;border:1px solid #fed7aa}
+
+/* Modal overlay */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;align-items:flex-start;justify-content:center;padding-top:60px}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius-lg);width:480px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.modal-header{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.modal-header h2{font-size:15px;font-weight:600;flex:1}
+.modal-close{width:28px;height:28px;border-radius:6px;border:none;background:none;color:var(--text3);font-size:18px;display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:var(--bg);color:var(--text)}
+.modal-body{padding:16px 18px;overflow-y:auto;flex:1}
+.modal-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.modal-footer .spacer{flex:1}
+
+/* Form */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--blue)}
+.field textarea{resize:vertical;min-height:56px}
+.field .hint{font-size:11px;color:var(--text3);margin-top:3px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+.toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.toggle-row label{font-size:13px;color:var(--text)}
+.toggle{width:36px;height:20px;border-radius:10px;border:none;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--blue)}.toggle.off{background:var(--border2)}
+.toggle::after{content:'';width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;transition:left .2s}
+.toggle.on::after{left:18px}.toggle.off::after{left:2px}
+
+/* Autocomplete */
+.ac-wrap{position:relative}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);z-index:50;box-shadow:var(--shadow);max-height:160px;overflow-y:auto;display:none}
+.ac-list.open{display:block}
+.ac-item{padding:7px 10px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px}
+.ac-item:hover,.ac-item.sel{background:var(--blue-bg)}
+.ac-badge{font-size:10px;color:var(--text3);background:var(--bg);border-radius:4px;padding:1px 5px;margin-left:auto}
+
+/* Color picker */
+.color-grid{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.color-swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s}
+.color-swatch.sel{border-color:#000;transform:scale(1.15)}
+
+/* Category modal */
+.cat-modal-list{display:flex;flex-direction:column;gap:4px}
+.cat-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)}
+.cat-row-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+.cat-row-name{flex:1;font-size:13px}
+.cat-row-del{padding:2px 8px;border-radius:5px;border:1px solid var(--border);background:none;color:var(--text3);font-size:12px;cursor:pointer}
+.cat-row-del:hover{background:#fee2e2;color:#dc2626;border-color:#fca5a5}
+
+/* Recur modal */
+.recur-section{background:var(--bg);border-radius:var(--radius);padding:12px;margin-bottom:10px}
+.recur-section h4{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px}
+
+/* Buttons */
+.btn{padding:6px 14px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:13px;display:inline-flex;align-items:center;gap:5px}
+.btn:hover{background:var(--bg)}
+.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.primary:hover{background:#1d4ed8}
+.btn.danger{color:#dc2626;border-color:#fca5a5}
+.btn.danger:hover{background:#fee2e2}
+.btn.sm{padding:4px 10px;font-size:12px}
+
+/* Notification toast */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;box-shadow:0 4px 16px rgba(0,0,0,.12);font-size:13px;display:flex;align-items:center;gap:8px;animation:slidein .25s ease}
+@keyframes slidein{from{transform:translateX(60px);opacity:0}to{transform:none;opacity:1}}
+.toast.notif{border-left:4px solid var(--blue)}
+
+/* ID badge */
+.id-badge{display:inline-block;font-size:10px;font-weight:600;color:var(--text3);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;letter-spacing:.03em}
+
+/* Export/Import */
+.file-drop{border:2px dashed var(--border2);border-radius:var(--radius);padding:24px;text-align:center;color:var(--text3);cursor:pointer;transition:border-color .15s}
+.file-drop:hover,.file-drop.drag{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
+.file-drop input{display:none}
+
+/* Responsive */
+@media(max-width:640px){
+  .sidebar{display:none}
+  .modal{width:98vw}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="logo">📅</div>
+    <h1>行事曆</h1>
+    <div class="spacer"></div>
+    <button class="topbar-btn" onclick="openExportModal()">⬇ 匯出</button>
+    <button class="topbar-btn" onclick="openImportModal()">⬆ 匯入</button>
+    <button class="topbar-btn" onclick="openCatModal()">🏷 類別管理</button>
+    <button class="topbar-btn primary" onclick="openEventModal(null,null)">＋ 新增事件</button>
+  </div>
+
+  <div class="main">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <h3>類別篩選</h3>
+        <div id="cat-filter-list"></div>
+        <button class="cat-add-btn" onclick="openCatModal()">＋ 管理類別</button>
+      </div>
+      <div class="sidebar-section2">
+        <button class="mini-action" onclick="openExportModal()">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 3v10m0 0l-3.5-3.5M10 13l3.5-3.5M4 16h12"/></svg>
+          匯出行事曆
+        </button>
+        <button class="mini-action" onclick="openImportModal()">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 17V7m0 0l-3.5 3.5M10 7l3.5 3.5M4 4h12"/></svg>
+          匯入行事曆
+        </button>
+        <button class="mini-action" onclick="checkNotifications()">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 2a6 6 0 016 6v3l1.5 2.5h-15L4 11V8a6 6 0 016-6zm-1.5 14a1.5 1.5 0 003 0"/></svg>
+          檢查通知
+        </button>
+      </div>
+    </div>
+
+    <!-- Calendar content -->
+    <div class="content">
+      <div class="cal-header">
+        <div class="month-nav">
+          <button onclick="changeMonth(-1)">‹</button>
+          <span class="month-label" id="month-label"></span>
+          <button onclick="changeMonth(1)">›</button>
+        </div>
+        <button class="today-btn" onclick="goToday()">今天</button>
+        <div class="view-btns">
+          <button class="view-btn active" id="vb-month" onclick="setView('month')">月</button>
+          <button class="view-btn" id="vb-list" onclick="setView('list')">清單</button>
+        </div>
+      </div>
+      <div class="cal-grid-wrap" id="cal-grid-wrap"></div>
+      <div class="list-view" id="list-view" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Event Modal -->
+<div class="overlay" id="ev-overlay">
+<div class="modal">
+  <div class="modal-header">
+    <h2 id="ev-modal-title">新增事件</h2>
+    <button class="modal-close" onclick="closeEventModal()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="field">
+      <label>標題 <span style="color:var(--text3);font-weight:400">(輸入關鍵字自動帶入建議)</span></label>
+      <div class="ac-wrap">
+        <input id="ev-title" type="text" placeholder="例：下載公保繳費" oninput="onTitleInput(this.value)" onkeydown="onTitleKey(event)" autocomplete="off">
+        <div class="ac-list" id="ac-list"></div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>類別</label>
+        <select id="ev-cat" onchange="onCatChange()"></select>
+      </div>
+      <div class="field">
+        <label>編號 <span style="color:var(--text3);font-weight:400">(自動)</span></label>
+        <input id="ev-id" type="text" readonly style="background:var(--bg);color:var(--text3);cursor:default">
+      </div>
+    </div>
+    <!-- Time -->
+    <div class="field">
+      <label>時間 / 日期</label>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <input type="checkbox" id="ev-allday" onchange="toggleAllDay()">
+        <label for="ev-allday" style="font-size:12px;cursor:pointer;color:var(--text2)">全天（日期段）</label>
+      </div>
+      <div id="time-inputs" style="display:flex;align-items:center;gap:6px">
+        <input id="ev-dt-start" type="datetime-local" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+        <span style="color:var(--text3)">→</span>
+        <input id="ev-dt-end" type="datetime-local" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+      </div>
+      <div id="date-inputs" style="display:none;align-items:center;gap:6px">
+        <input id="ev-d-start" type="date" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+        <span style="color:var(--text3)">→</span>
+        <input id="ev-d-end" type="date" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+      </div>
+    </div>
+    <!-- Notification -->
+    <div class="toggle-row">
+      <button class="toggle off" id="notif-toggle" onclick="toggleNotif(this)"></button>
+      <label>開啟通知</label>
+      <div id="notif-opts" style="display:none;margin-left:auto">
+        <select id="notif-before" style="padding:4px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px">
+          <option value="0">準時通知</option>
+          <option value="5">5 分鐘前</option>
+          <option value="10">10 分鐘前</option>
+          <option value="15">15 分鐘前</option>
+          <option value="30">30 分鐘前</option>
+          <option value="60">1 小時前</option>
+          <option value="1440">1 天前</option>
+          <option value="2880">2 天前</option>
+        </select>
+      </div>
+    </div>
+    <!-- Recurrence -->
+    <div class="toggle-row">
+      <button class="toggle off" id="recur-toggle" onclick="toggleRecur(this)"></button>
+      <label>自動同步（週期重複）</label>
+    </div>
+    <div id="recur-opts" style="display:none">
+      <div class="recur-section">
+        <h4>重複設定</h4>
+        <div class="row3" style="margin-bottom:10px">
+          <div class="field" style="margin-bottom:0">
+            <label>每隔</label>
+            <input id="recur-interval" type="number" min="1" value="1" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>單位</label>
+            <select id="recur-unit" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+              <option value="day">天</option>
+              <option value="week">週</option>
+              <option value="month" selected>月</option>
+              <option value="year">年</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>遇假日</label>
+            <select id="recur-holiday" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+              <option value="keep">不調整</option>
+              <option value="after">延後到平日</option>
+              <option value="before">提前到平日</option>
+            </select>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field" style="margin-bottom:0">
+            <label>停止日期（選填）</label>
+            <input id="recur-until" type="date" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);width:100%">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>最多重複次數（選填）</label>
+            <input id="recur-count" type="number" min="1" placeholder="不限" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);width:100%">
+          </div>
+        </div>
+        <div class="hint" style="margin-top:8px;font-size:11px;color:var(--text3)">
+          ✦ 每月5號：間隔 1 月，遇假日可設定延後或提前
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>備註</label>
+      <textarea id="ev-note" placeholder="選填"></textarea>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn danger" id="ev-del-btn" style="display:none" onclick="deleteEvent()">🗑 刪除</button>
+    <button class="btn danger sm" id="ev-del-series-btn" style="display:none" onclick="deleteEventSeries()">刪除全系列</button>
+    <div class="spacer"></div>
+    <button class="btn" onclick="closeEventModal()">取消</button>
+    <button class="btn primary" onclick="saveEvent()">💾 儲存</button>
+  </div>
+</div>
+</div>
+
+<!-- Category Modal -->
+<div class="overlay" id="cat-overlay">
+<div class="modal" style="width:400px">
+  <div class="modal-header">
+    <h2>類別管理</h2>
+    <button class="modal-close" onclick="closeCatModal()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="cat-modal-list" id="cat-modal-list"></div>
+    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">新增類別</div>
+      <div class="row2" style="margin-bottom:10px">
+        <div class="field" style="margin-bottom:0">
+          <label>名稱</label>
+          <input id="new-cat-name" type="text" placeholder="類別名稱">
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>文字色</label>
+          <input id="new-cat-text" type="color" value="#ffffff" style="height:36px;padding:2px 4px;cursor:pointer;border:1px solid var(--border2);border-radius:var(--radius);width:100%">
+        </div>
+      </div>
+      <div class="field">
+        <label>底色</label>
+        <div class="color-grid" id="color-grid"></div>
+      </div>
+      <button class="btn primary" style="width:100%" onclick="addCategory()">新增類別</button>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <div class="spacer"></div>
+    <button class="btn primary" onclick="closeCatModal()">完成</button>
+  </div>
+</div>
+</div>
+
+<!-- Export Modal -->
+<div class="overlay" id="export-overlay">
+<div class="modal" style="width:380px">
+  <div class="modal-header">
+    <h2>匯出行事曆</h2>
+    <button class="modal-close" onclick="closeExportModal()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="field">
+      <label>日期範圍（選填，留空匯出全部）</label>
+      <div class="row2">
+        <input id="export-from" type="date" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+        <input id="export-to" type="date" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+      </div>
+    </div>
+    <div class="field">
+      <label>格式</label>
+      <select id="export-fmt" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);width:100%">
+        <option value="json">JSON（完整備份，可再匯入）</option>
+        <option value="csv">CSV（Excel 開啟）</option>
+        <option value="ics">ICS（Google 日曆 / Apple 日曆）</option>
+      </select>
+    </div>
+    <div style="font-size:12px;color:var(--text3)">
+      ✦ JSON 格式可完整備份再匯入本系統<br>
+      ✦ ICS 可直接匯入 Google 日曆 / Outlook
+    </div>
+  </div>
+  <div class="modal-footer">
+    <div class="spacer"></div>
+    <button class="btn" onclick="closeExportModal()">取消</button>
+    <button class="btn primary" onclick="doExport()">⬇ 下載匯出</button>
+  </div>
+</div>
+</div>
+
+<!-- Import Modal -->
+<div class="overlay" id="import-overlay">
+<div class="modal" style="width:380px">
+  <div class="modal-header">
+    <h2>匯入行事曆</h2>
+    <button class="modal-close" onclick="closeImportModal()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="file-drop" id="file-drop" onclick="document.getElementById('import-file').click()" ondragover="onDragOver(event)" ondrop="onDrop(event)">
+      <input type="file" id="import-file" accept=".json,.csv,.ics" onchange="onFileSelect(event)">
+      <div style="font-size:24px;margin-bottom:8px">📂</div>
+      <div style="font-size:13px;font-weight:500;margin-bottom:4px">點擊或拖曳檔案到此處</div>
+      <div style="font-size:12px">支援 JSON / CSV / ICS 格式</div>
+    </div>
+    <div id="import-preview" style="margin-top:12px"></div>
+  </div>
+  <div class="modal-footer">
+    <div class="spacer"></div>
+    <button class="btn" onclick="closeImportModal()">取消</button>
+    <button class="btn primary" id="import-btn" style="display:none" onclick="doImport()">⬆ 確認匯入</button>
+  </div>
+</div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ─── Data ───────────────────────────────────────────────
+let categories = [
+  {id:'work',name:'工作',bg:'#2563eb',text:'#ffffff'},
+  {id:'family',name:'家庭',bg:'#059669',text:'#ffffff'},
+  {id:'personal',name:'個人',bg:'#7c3aed',text:'#ffffff'},
+  {id:'health',name:'健康',bg:'#dc2626',text:'#ffffff'},
+  {id:'task',name:'待辦',bg:'#d97706',text:'#ffffff'},
+];
+
+let events = [
+  {id:'WORK-001',title:'週報提交',cat:'work',allday:false,start:'2026-06-26T10:00',end:'2026-06-26T11:00',notif:true,notifBefore:30,note:'',recurId:null},
+  {id:'TASK-001',title:'下載公保繳費',cat:'task',allday:true,start:'2026-06-05',end:'2026-06-05',notif:true,notifBefore:1440,note:'',recurId:'REC-001'},
+  {id:'TASK-002',title:'下載公保繳費',cat:'task',allday:true,start:'2026-07-07',end:'2026-07-07',notif:true,notifBefore:1440,note:'每月5號，遇假延後',recurId:'REC-001'},
+  {id:'FAMILY-001',title:'家庭聚餐',cat:'family',allday:false,start:'2026-06-28T18:00',end:'2026-06-28T21:00',notif:true,notifBefore:60,note:'',recurId:null},
+  {id:'HEALTH-001',title:'健康檢查',cat:'health',allday:true,start:'2026-07-10',end:'2026-07-12',notif:true,notifBefore:1440,note:'',recurId:null},
+];
+
+let recurrences = [
+  {id:'REC-001',baseTitle:'下載公保繳費',cat:'task',interval:1,unit:'month',holiday:'after',until:'2027-12-31',count:null}
+];
+
+let activeFilter = new Set(categories.map(c=>c.id));
+let currentYear, currentMonth, currentView='month';
+let editEventId = null;
+let importData = null;
+const PALETTE = ['#2563eb','#7c3aed','#059669','#dc2626','#d97706','#0891b2','#db2777','#65a30d','#ea580c','#6b7280','#1d4ed8','#7e22ce','#047857','#991b1b','#92400e'];
+let selectedColor = PALETTE[0];
+let acIndex = -1;
+
+// ─── Init ────────────────────────────────────────────────
+function init(){
+  load();
+  const now = new Date();
+  currentYear = now.getFullYear();
+  currentMonth = now.getMonth();
+  buildCatFilter();
+  buildColorGrid();
+  buildCatSelect();
+  render();
+  requestNotifPermission();
+  setInterval(checkNotifications, 60000);
+}
+
+function load(){
+  try{
+    const d = localStorage.getItem('cal_data');
+    if(d){const p=JSON.parse(d);events=p.events||events;categories=p.categories||categories;recurrences=p.recurrences||recurrences;}
+  }catch(e){}
+  activeFilter = new Set(categories.map(c=>c.id));
+}
+function save(){
+  localStorage.setItem('cal_data',JSON.stringify({events,categories,recurrences}));
+}
+
+// ─── Rendering ───────────────────────────────────────────
+function setView(v){
+  currentView=v;
+  document.getElementById('vb-month').className='view-btn'+(v==='month'?' active':'');
+  document.getElementById('vb-list').className='view-btn'+(v==='list'?' active':'');
+  document.getElementById('cal-grid-wrap').style.display=v==='month'?'block':'none';
+  document.getElementById('list-view').style.display=v==='list'?'block':'none';
+  render();
+}
+
+function changeMonth(d){ currentMonth+=d; if(currentMonth>11){currentMonth=0;currentYear++;}if(currentMonth<0){currentMonth=11;currentYear--;} render(); }
+function goToday(){ const n=new Date(); currentYear=n.getFullYear(); currentMonth=n.getMonth(); render(); }
+
+function render(){
+  const mn=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+  document.getElementById('month-label').textContent=`${currentYear} ${mn[currentMonth]}`;
+  buildCatFilter();
+  if(currentView==='month') renderMonth();
+  else renderList();
+}
+
+function renderMonth(){
+  const wrap=document.getElementById('cal-grid-wrap');
+  const headers=['日','一','二','三','四','五','六'];
+  const first=new Date(currentYear,currentMonth,1).getDay();
+  const days=new Date(currentYear,currentMonth+1,0).getDate();
+  const prev=new Date(currentYear,currentMonth,0).getDate();
+  const today=new Date();
+
+  let html=`<div class="cal-grid">`;
+  headers.forEach(h=>html+=`<div class="cal-day-header">${h}</div>`);
+
+  let cells=[];
+  for(let i=0;i<first;i++) cells.push({d:prev-first+1+i,m:currentMonth-1,y:currentYear,other:true});
+  for(let i=1;i<=days;i++) cells.push({d:i,m:currentMonth,y:currentYear,other:false});
+  while(cells.length<42) cells.push({d:cells.length-first-days+1,m:currentMonth+1,y:currentYear,other:true});
+
+  cells.forEach(info=>{
+    const ds=fmtDate(info.y,info.m,info.d);
+    const isToday=!info.other&&info.d===today.getDate()&&info.m===today.getMonth()&&info.y===today.getFullYear();
+    const dayEvs=getVisibleEventsOnDate(ds);
+    let cls='cal-cell'+(info.other?' other':'')+(isToday?' today':'');
+    html+=`<div class="${cls}" onclick="openEventModal(null,'${ds}')">`;
+    html+=`<div class="day-num">${info.d}</div>`;
+    const show=dayEvs.slice(0,3);
+    show.forEach(ev=>{
+      const cat=categories.find(c=>c.id===ev.cat)||{bg:'#888',text:'#fff'};
+      const dot=ev.notif?`<span class="notif-dot"></span>`:'';
+      const num=ev.id?`<span class="ev-num">#${ev.id.split('-').pop()}</span>`:'';
+      html+=`<div class="ev-chip" style="background:${cat.bg};color:${cat.text}" onclick="event.stopPropagation();openEventModal('${ev.id}',null)" title="${ev.title}">${dot}${ev.title}${num}</div>`;
+    });
+    if(dayEvs.length>3) html+=`<div class="more-link" onclick="event.stopPropagation();setView('list')">＋${dayEvs.length-3} 更多</div>`;
+    html+=`</div>`;
+  });
+  html+=`</div>`;
+  wrap.innerHTML=html;
+}
+
+function renderList(){
+  const lv=document.getElementById('list-view');
+  const visEvs=events.filter(ev=>activeFilter.has(ev.cat)).sort((a,b)=>a.start.localeCompare(b.start));
+  if(!visEvs.length){lv.innerHTML=`<div style="text-align:center;color:var(--text3);padding:40px">目前沒有符合的事件</div>`;return;}
+  const grouped={};
+  visEvs.forEach(ev=>{
+    const key=ev.start.slice(0,10);
+    if(!grouped[key]) grouped[key]=[];
+    grouped[key].push(ev);
+  });
+  let html='';
+  Object.keys(grouped).sort().forEach(date=>{
+    const d=new Date(date+'T00:00');
+    const label=`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}（${'日一二三四五六'[d.getDay()]}）`;
+    html+=`<div class="list-date-group"><div class="list-date-label">${label}</div>`;
+    grouped[date].forEach(ev=>{
+      const cat=categories.find(c=>c.id===ev.cat)||{bg:'#888',name:'?'};
+      const time=ev.allday?'全天':ev.start.slice(11,16)+(ev.end?' – '+ev.end.slice(11,16):'');
+      const nb=ev.notif?`<span class="notif-badge">🔔 ${fmtNotifBefore(ev.notifBefore)}</span>`:'';
+      const rid=ev.recurId?`<span class="id-badge">↻ 週期</span>`:'';
+      html+=`<div class="list-ev" onclick="openEventModal('${ev.id}',null)">
+        <div class="color-bar" style="background:${cat.bg}"></div>
+        <div class="list-ev-body">
+          <div class="list-ev-title"><span class="id-badge">${ev.id}</span>${ev.title}${rid}</div>
+          <div class="list-ev-meta"><span>🕐 ${time}</span><span style="background:${cat.bg};color:${cat.text};padding:1px 6px;border-radius:8px;font-size:10px">${cat.name}</span>${nb}${ev.note?`<span>📝 ${ev.note}</span>`:''}</div>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  lv.innerHTML=html;
+}
+
+// ─── Event helpers ────────────────────────────────────────
+function getVisibleEventsOnDate(dateStr){
+  return events.filter(ev=>{
+    if(!activeFilter.has(ev.cat)) return false;
+    if(ev.allday) return dateStr>=ev.start && dateStr<=(ev.end||ev.start);
+    return ev.start.startsWith(dateStr);
+  });
+}
+
+function fmtDate(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function fmtNotifBefore(min){
+  if(!min) return '準時';
+  if(min<60) return `${min}分鐘前`;
+  if(min<1440) return `${min/60}小時前`;
+  return `${min/1440}天前`;
+}
+
+// ─── Category ─────────────────────────────────────────────
+function buildCatFilter(){
+  const el=document.getElementById('cat-filter-list');
+  el.innerHTML='';
+  categories.forEach(cat=>{
+    const on=activeFilter.has(cat.id);
+    const cnt=events.filter(e=>e.cat===cat.id).length;
+    const div=document.createElement('div');
+    div.className='cat-item';
+    div.innerHTML=`<div class="cat-check ${on?'on':''}" style="${on?`background:${cat.bg}`:''}">✓</div><div class="cat-dot" style="background:${cat.bg}"></div><span class="cat-name">${cat.name}</span><span class="cat-count">${cnt}</span>`;
+    div.onclick=()=>{
+      if(on){if(activeFilter.size>1)activeFilter.delete(cat.id);}
+      else activeFilter.add(cat.id);
+      render();
+    };
+    el.appendChild(div);
+  });
+}
+
+function buildCatSelect(){
+  const sel=document.getElementById('ev-cat');
+  sel.innerHTML=categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+function openCatModal(){
+  refreshCatModalList();
+  buildColorGrid();
+  document.getElementById('cat-overlay').classList.add('open');
+}
+function closeCatModal(){document.getElementById('cat-overlay').classList.remove('open');buildCatSelect();render();}
+
+function refreshCatModalList(){
+  const el=document.getElementById('cat-modal-list');
+  el.innerHTML='';
+  categories.forEach(cat=>{
+    const row=document.createElement('div');
+    row.className='cat-row';
+    row.innerHTML=`<div class="cat-row-dot" style="background:${cat.bg}"></div>
+      <span class="cat-row-name" style="color:${cat.bg}">${cat.name}</span>
+      <span style="font-size:11px;color:var(--text3)">${events.filter(e=>e.cat===cat.id).length} 個事件</span>
+      <button class="cat-row-del" onclick="deleteCat('${cat.id}')">刪除</button>`;
+    el.appendChild(row);
+  });
+}
+
+function buildColorGrid(){
+  const grid=document.getElementById('color-grid');
+  grid.innerHTML='';
+  PALETTE.forEach(col=>{
+    const sw=document.createElement('div');
+    sw.className='color-swatch'+(col===selectedColor?' sel':'');
+    sw.style.background=col;
+    sw.onclick=()=>{selectedColor=col;buildColorGrid();};
+    grid.appendChild(sw);
+  });
+}
+
+function addCategory(){
+  const name=document.getElementById('new-cat-name').value.trim();
+  if(!name){toast('請輸入類別名稱');return;}
+  const text=document.getElementById('new-cat-text').value;
+  const id='cat_'+Date.now();
+  categories.push({id,name,bg:selectedColor,text});
+  activeFilter.add(id);
+  document.getElementById('new-cat-name').value='';
+  save();refreshCatModalList();buildCatSelect();
+  toast('類別已新增：'+name);
+}
+
+function deleteCat(id){
+  if(events.some(e=>e.cat===id)){toast('此類別仍有事件，請先移除事件');return;}
+  categories=categories.filter(c=>c.id!==id);
+  activeFilter.delete(id);
+  save();refreshCatModalList();render();
+}
+
+// ─── Event Modal ──────────────────────────────────────────
+function openEventModal(evId, dateStr){
+  editEventId=evId;
+  const ev=evId?events.find(e=>e.id===evId):null;
+  document.getElementById('ev-modal-title').textContent=ev?'編輯事件':'新增事件';
+  document.getElementById('ev-del-btn').style.display=ev?'':'none';
+  document.getElementById('ev-del-series-btn').style.display=(ev&&ev.recurId)?'':'none';
+  document.getElementById('ev-title').value=ev?ev.title:'';
+  document.getElementById('ev-cat').value=ev?ev.cat:categories[0]?.id||'';
+  document.getElementById('ev-note').value=ev?ev.note:'';
+
+  const allday=ev?ev.allday:false;
+  document.getElementById('ev-allday').checked=allday;
+  toggleAllDay();
+
+  if(ev&&ev.allday){
+    document.getElementById('ev-d-start').value=ev.start;
+    document.getElementById('ev-d-end').value=ev.end||ev.start;
+  } else if(ev){
+    document.getElementById('ev-dt-start').value=ev.start;
+    document.getElementById('ev-dt-end').value=ev.end||ev.start;
+  } else if(dateStr){
+    document.getElementById('ev-dt-start').value=dateStr+'T09:00';
+    document.getElementById('ev-dt-end').value=dateStr+'T10:00';
+    document.getElementById('ev-d-start').value=dateStr;
+    document.getElementById('ev-d-end').value=dateStr;
+  }
+
+  const notif=ev?ev.notif:false;
+  const nt=document.getElementById('notif-toggle');
+  nt.className='toggle '+(notif?'on':'off');
+  document.getElementById('notif-opts').style.display=notif?'flex':'none';
+  document.getElementById('notif-before').value=ev?ev.notifBefore:15;
+
+  // Recurrence
+  const rec=ev&&ev.recurId?recurrences.find(r=>r.id===ev.recurId):null;
+  const rt=document.getElementById('recur-toggle');
+  rt.className='toggle '+(rec?'on':'off');
+  document.getElementById('recur-opts').style.display=rec?'block':'none';
+  if(rec){
+    document.getElementById('recur-interval').value=rec.interval;
+    document.getElementById('recur-unit').value=rec.unit;
+    document.getElementById('recur-holiday').value=rec.holiday;
+    document.getElementById('recur-until').value=rec.until||'';
+    document.getElementById('recur-count').value=rec.count||'';
+  } else {
+    document.getElementById('recur-interval').value=1;
+    document.getElementById('recur-unit').value='month';
+    document.getElementById('recur-holiday').value='keep';
+    document.getElementById('recur-until').value='';
+    document.getElementById('recur-count').value='';
+  }
+
+  // Auto ID
+  updateAutoId();
+  document.getElementById('ev-overlay').classList.add('open');
+  document.getElementById('ac-list').className='ac-list';
+}
+
+function closeEventModal(){document.getElementById('ev-overlay').classList.remove('open');document.getElementById('ac-list').className='ac-list';}
+
+function toggleAllDay(){
+  const a=document.getElementById('ev-allday').checked;
+  document.getElementById('time-inputs').style.display=a?'none':'flex';
+  document.getElementById('date-inputs').style.display=a?'flex':'none';
+}
+function toggleNotif(btn){
+  const on=btn.classList.contains('off');
+  btn.className='toggle '+(on?'on':'off');
+  document.getElementById('notif-opts').style.display=on?'flex':'none';
+}
+function toggleRecur(btn){
+  const on=btn.classList.contains('off');
+  btn.className='toggle '+(on?'on':'off');
+  document.getElementById('recur-opts').style.display=on?'block':'none';
+}
+function onCatChange(){updateAutoId();}
+
+function updateAutoId(){
+  if(editEventId) return document.getElementById('ev-id').value=editEventId;
+  const cat=document.getElementById('ev-cat').value;
+  const catObj=categories.find(c=>c.id===cat);
+  const prefix=catObj?catObj.name.toUpperCase().slice(0,4):cat.toUpperCase().slice(0,4);
+  const existing=events.filter(e=>e.id&&e.id.startsWith(prefix+'-'));
+  const nums=existing.map(e=>parseInt(e.id.split('-').pop())||0);
+  const next=(nums.length?Math.max(...nums):0)+1;
+  document.getElementById('ev-id').value=`${prefix}-${String(next).padStart(3,'0')}`;
+}
+
+// ─── Autocomplete ─────────────────────────────────────────
+function onTitleInput(val){
+  acIndex=-1;
+  if(!val.trim()){document.getElementById('ac-list').className='ac-list';return;}
+  const lower=val.toLowerCase();
+  const suggestions=buildSuggestions(lower);
+  const ac=document.getElementById('ac-list');
+  if(!suggestions.length){ac.className='ac-list';return;}
+  ac.innerHTML=suggestions.slice(0,6).map((s,i)=>`
+    <div class="ac-item" data-idx="${i}" onclick="pickSuggestion('${s.title.replace(/'/g,"\\'")}')">
+      <span>${s.title}</span>
+      <span class="ac-badge">${s.badge}</span>
+    </div>`).join('');
+  ac.className='ac-list open';
+}
+
+function buildSuggestions(query){
+  const titleGroups={};
+  events.forEach(ev=>{
+    if(!ev.title.toLowerCase().includes(query)) return;
+    if(!titleGroups[ev.title]) titleGroups[ev.title]=[];
+    titleGroups[ev.title].push(ev);
+  });
+  return Object.entries(titleGroups).map(([title,evs])=>{
+    evs.sort((a,b)=>b.start.localeCompare(a.start));
+    const last=evs[0];
+    const lastDate=last.start.slice(0,7);
+    // Predict next period
+    const next=predictNext(evs,last);
+    return {title,badge:`上次 ${lastDate}${next?` → 預測 ${next}`:''}`};
+  });
+}
+
+function predictNext(evs,last){
+  if(evs.length<2) return null;
+  const sorted=evs.slice().sort((a,b)=>a.start.localeCompare(b.start));
+  const diffs=[];
+  for(let i=1;i<sorted.length;i++){
+    const a=new Date(sorted[i-1].start.slice(0,10));
+    const b=new Date(sorted[i].start.slice(0,10));
+    diffs.push(Math.round((b-a)/(86400000)));
+  }
+  const avg=Math.round(diffs.reduce((a,b)=>a+b,0)/diffs.length);
+  const lastD=new Date(last.start.slice(0,10));
+  lastD.setDate(lastD.getDate()+avg);
+  return `${lastD.getFullYear()}/${lastD.getMonth()+1}`;
+}
+
+function onTitleKey(e){
+  const items=document.querySelectorAll('.ac-item');
+  if(e.key==='ArrowDown'){acIndex=Math.min(acIndex+1,items.length-1);highlightAc(items);}
+  else if(e.key==='ArrowUp'){acIndex=Math.max(acIndex-1,0);highlightAc(items);}
+  else if(e.key==='Enter'&&acIndex>=0){e.preventDefault();items[acIndex]?.click();}
+  else if(e.key==='Escape'){document.getElementById('ac-list').className='ac-list';}
+}
+function highlightAc(items){items.forEach((el,i)=>el.className='ac-item'+(i===acIndex?' sel':''));}
+function pickSuggestion(title){
+  document.getElementById('ev-title').value=title;
+  document.getElementById('ac-list').className='ac-list';
+  updateAutoId();
+}
+
+// ─── Save/Delete Event ────────────────────────────────────
+function saveEvent(){
+  const title=document.getElementById('ev-title').value.trim();
+  if(!title){toast('請填寫標題');return;}
+  const cat=document.getElementById('ev-cat').value;
+  const allday=document.getElementById('ev-allday').checked;
+  const notif=document.getElementById('notif-toggle').classList.contains('on');
+  const notifBefore=notif?parseInt(document.getElementById('notif-before').value):0;
+  const note=document.getElementById('ev-note').value;
+  const start=allday?document.getElementById('ev-d-start').value:document.getElementById('ev-dt-start').value;
+  const end=allday?document.getElementById('ev-d-end').value:document.getElementById('ev-dt-end').value;
+  if(!start){toast('請填寫開始時間');return;}
+
+  const hasRecur=document.getElementById('recur-toggle').classList.contains('on');
+  let recurId=null;
+
+  if(hasRecur){
+    const interval=parseInt(document.getElementById('recur-interval').value)||1;
+    const unit=document.getElementById('recur-unit').value;
+    const holiday=document.getElementById('recur-holiday').value;
+    const until=document.getElementById('recur-until').value||null;
+    const countVal=document.getElementById('recur-count').value;
+    const count=countVal?parseInt(countVal):null;
+
+    if(editEventId){
+      const oldEv=events.find(e=>e.id===editEventId);
+      recurId=oldEv?.recurId||'REC-'+Date.now();
+    } else {
+      recurId='REC-'+Date.now();
+    }
+    const existing=recurrences.find(r=>r.id===recurId);
+    if(existing) Object.assign(existing,{interval,unit,holiday,until,count,baseTitle:title,cat});
+    else recurrences.push({id:recurId,baseTitle:title,cat,interval,unit,holiday,until,count});
+
+    // Generate future instances
+    generateRecurInstances(recurId,title,cat,start,allday,notif,notifBefore,note,interval,unit,holiday,until,count);
+  }
+
+  const newId=document.getElementById('ev-id').value||('EV-'+Date.now());
+  const ev={id:newId,title,cat,allday,start,end:end||start,notif,notifBefore,note,recurId};
+
+  if(editEventId){
+    const idx=events.findIndex(e=>e.id===editEventId);
+    if(idx>=0) events[idx]=ev;
+  } else {
+    events.push(ev);
+  }
+  save();closeEventModal();render();
+  toast(editEventId?'事件已更新':'事件已新增：'+title);
+}
+
+function generateRecurInstances(recurId,title,cat,baseStart,allday,notif,notifBefore,note,interval,unit,holiday,until,count){
+  // Remove future generated events for this series (keep existing edits)
+  events=events.filter(e=>e.recurId!==recurId||e.id===editEventId);
+  const base=new Date(baseStart.slice(0,10));
+  const stop=until?new Date(until):new Date(base.getFullYear()+3,base.getMonth(),base.getDate());
+  const max=count||60;
+  let current=new Date(base);
+  let gen=0;
+  const catObj=categories.find(c=>c.id===cat)||{name:'EV'};
+  const prefix=catObj.name.toUpperCase().slice(0,4);
+
+  while(current<=stop && gen<max){
+    addUnit(current,interval,unit);
+    if(current>stop) break;
+    let adjusted=new Date(current);
+    if(holiday!=='keep'){
+      const dow=adjusted.getDay();
+      if(dow===0){adjusted.setDate(adjusted.getDate()+(holiday==='after'?1:-2));}
+      if(dow===6){adjusted.setDate(adjusted.getDate()+(holiday==='after'?2:-1));}
+    }
+    const ds=adjusted.toISOString().slice(0,10);
+    // Check if this date already has a manual event from this series
+    if(!events.some(e=>e.recurId===recurId&&e.start===ds)){
+      const existing=events.filter(e=>e.id&&e.id.startsWith(prefix+'-'));
+      const nums=existing.map(e=>parseInt(e.id.split('-').pop())||0);
+      const nextNum=(nums.length?Math.max(...nums):0)+1;
+      const newId=`${prefix}-${String(nextNum).padStart(3,'0')}`;
+      events.push({id:newId,title,cat,allday,start:ds,end:ds,notif,notifBefore,note,recurId});
+    }
+    gen++;
+  }
+}
+
+function addUnit(d,n,unit){
+  if(unit==='day') d.setDate(d.getDate()+n);
+  else if(unit==='week') d.setDate(d.getDate()+n*7);
+  else if(unit==='month') d.setMonth(d.getMonth()+n);
+  else if(unit==='year') d.setFullYear(d.getFullYear()+n);
+}
+
+function deleteEvent(){
+  if(!confirm('確定刪除此事件？')) return;
+  events=events.filter(e=>e.id!==editEventId);
+  save();closeEventModal();render();toast('事件已刪除');
+}
+function deleteEventSeries(){
+  const ev=events.find(e=>e.id===editEventId);
+  if(!ev?.recurId||!confirm('確定刪除整個週期系列？')) return;
+  const rid=ev.recurId;
+  events=events.filter(e=>e.recurId!==rid);
+  recurrences=recurrences.filter(r=>r.id!==rid);
+  save();closeEventModal();render();toast('週期系列已刪除');
+}
+
+// ─── Notifications ────────────────────────────────────────
+function requestNotifPermission(){
+  if('Notification' in window && Notification.permission==='default') Notification.requestPermission();
+}
+
+function checkNotifications(){
+  const now=new Date();
+  events.filter(ev=>ev.notif).forEach(ev=>{
+    const evTime=new Date(ev.start);
+    if(isNaN(evTime)) return;
+    const diff=(evTime-now)/60000;
+    if(diff>=0 && diff<=ev.notifBefore+1 && diff>=ev.notifBefore-1){
+      sendNotif(ev);
+    }
+  });
+}
+
+function sendNotif(ev){
+  const msg=`📅 ${ev.title}${ev.notifBefore?` (${fmtNotifBefore(ev.notifBefore)})`:' 現在開始'}`;
+  if('Notification' in window && Notification.permission==='granted'){
+    new Notification('行事曆提醒',{body:msg});
+  }
+  toast('🔔 '+msg,'notif');
+}
+
+// ─── Export ───────────────────────────────────────────────
+function openExportModal(){document.getElementById('export-overlay').classList.add('open');}
+function closeExportModal(){document.getElementById('export-overlay').classList.remove('open');}
+
+function doExport(){
+  const fmt=document.getElementById('export-fmt').value;
+  const from=document.getElementById('export-from').value;
+  const to=document.getElementById('export-to').value;
+  let data=events;
+  if(from) data=data.filter(e=>e.start>=from);
+  if(to) data=data.filter(e=>e.start<=to+'T23:59');
+
+  if(fmt==='json'){
+    const out=JSON.stringify({events:data,categories,recurrences},null,2);
+    dl(out,'calendar.json','application/json');
+  } else if(fmt==='csv'){
+    const hdr='ID,標題,類別,全天,開始,結束,通知,通知時間(分),備註,週期ID\n';
+    const rows=data.map(e=>[e.id,q(e.title),e.cat,e.allday,e.start,e.end||'',e.notif,e.notifBefore,q(e.note||''),e.recurId||''].join(',')).join('\n');
+    dl('\uFEFF'+hdr+rows,'calendar.csv','text/csv');
+  } else if(fmt==='ics'){
+    let ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//CalSystem//EN\r\n';
+    data.forEach(ev=>{
+      ics+='BEGIN:VEVENT\r\n';
+      ics+=`UID:${ev.id}@calsys\r\n`;
+      ics+=`SUMMARY:${ev.title}\r\n`;
+      if(ev.allday){
+        ics+=`DTSTART;VALUE=DATE:${ev.start.replace(/-/g,'')}\r\n`;
+        const end=ev.end?ev.end:ev.start;
+        const endD=new Date(end+'T00:00');endD.setDate(endD.getDate()+1);
+        ics+=`DTEND;VALUE=DATE:${endD.toISOString().slice(0,10).replace(/-/g,'')}\r\n`;
+      } else {
+        ics+=`DTSTART:${ev.start.replace(/[-:]/g,'').replace('T','T')}00\r\n`;
+        if(ev.end) ics+=`DTEND:${ev.end.replace(/[-:]/g,'').replace('T','T')}00\r\n`;
+      }
+      if(ev.note) ics+=`DESCRIPTION:${ev.note}\r\n`;
+      if(ev.notif&&!ev.allday) ics+=`BEGIN:VALARM\r\nTRIGGER:-PT${ev.notifBefore}M\r\nACTION:DISPLAY\r\nDESCRIPTION:${ev.title}\r\nEND:VALARM\r\n`;
+      ics+='END:VEVENT\r\n';
+    });
+    ics+='END:VCALENDAR';
+    dl(ics,'calendar.ics','text/calendar');
+  }
+  closeExportModal();toast('匯出完成');
+}
+
+function q(s){return '"'+String(s).replace(/"/g,'""')+'"';}
+function dl(content,name,type){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type}));
+  a.download=name;a.click();
+}
+
+// ─── Import ───────────────────────────────────────────────
+function openImportModal(){document.getElementById('import-overlay').classList.add('open');}
+function closeImportModal(){document.getElementById('import-overlay').classList.remove('open');importData=null;document.getElementById('import-preview').innerHTML='';document.getElementById('import-btn').style.display='none';}
+function onDragOver(e){e.preventDefault();document.getElementById('file-drop').classList.add('drag');}
+function onDrop(e){e.preventDefault();document.getElementById('file-drop').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)readFile(f);}
+function onFileSelect(e){if(e.target.files[0])readFile(e.target.files[0]);}
+
+function readFile(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=e.target.result;
+    const ext=file.name.split('.').pop().toLowerCase();
+    try{
+      if(ext==='json') importData=parseJSON(text);
+      else if(ext==='csv') importData=parseCSV(text);
+      else if(ext==='ics') importData=parseICS(text);
+      else{toast('不支援的格式');return;}
+      showImportPreview(importData,ext);
+    }catch(err){toast('解析失敗：'+err.message);}
+  };
+  reader.readAsText(file,'utf-8');
+}
+
+function parseJSON(text){const p=JSON.parse(text);return{events:p.events||[],categories:p.categories||[],recurrences:p.recurrences||[]};}
+function parseCSV(text){
+  const lines=text.replace(/^\uFEFF/,'').split('\n').slice(1).filter(l=>l.trim());
+  const evs=lines.map(line=>{
+    const cols=[];let buf='',inq=false;
+    for(const c of line){if(c==='"'){inq=!inq;}else if(c===','&&!inq){cols.push(buf);buf='';}else buf+=c;}
+    cols.push(buf);
+    return{id:cols[0]||'',title:cols[1]||'',cat:cols[2]||'',allday:cols[3]==='true',start:cols[4]||'',end:cols[5]||'',notif:cols[6]==='true',notifBefore:parseInt(cols[7])||0,note:cols[8]||'',recurId:cols[9]||null};
+  });
+  return{events:evs,categories:[],recurrences:[]};
+}
+function parseICS(text){
+  const evs=[];let cur=null;
+  text.split(/\r?\n/).forEach(line=>{
+    if(line==='BEGIN:VEVENT'){cur={};}
+    else if(line==='END:VEVENT'&&cur){
+      if(cur.start) evs.push({id:cur.uid||'EV-'+Date.now(),title:cur.title||'',cat:'task',allday:cur.allday,start:cur.start,end:cur.end||cur.start,notif:false,notifBefore:0,note:cur.note||'',recurId:null});
+      cur=null;
+    } else if(cur){
+      if(line.startsWith('SUMMARY:')) cur.title=line.slice(8);
+      else if(line.startsWith('UID:')) cur.uid=line.slice(4);
+      else if(line.startsWith('DESCRIPTION:')) cur.note=line.slice(12);
+      else if(line.startsWith('DTSTART;VALUE=DATE:')){cur.start=line.slice(19).replace(/(\d{4})(\d{2})(\d{2})/,'$1-$2-$3');cur.allday=true;}
+      else if(line.startsWith('DTSTART:')){cur.start=line.slice(8,23).replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/,'$1-$2-$3T$4:$5');cur.allday=false;}
+      else if(line.startsWith('DTEND;VALUE=DATE:')){cur.end=line.slice(17).replace(/(\d{4})(\d{2})(\d{2})/,'$1-$2-$3');}
+      else if(line.startsWith('DTEND:')){cur.end=line.slice(6,21).replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/,'$1-$2-$3T$4:$5');}
+    }
+  });
+  return{events:evs,categories:[],recurrences:[]};
+}
+
+function showImportPreview(data,ext){
+  const el=document.getElementById('import-preview');
+  el.innerHTML=`<div style="background:var(--bg);border-radius:var(--radius);padding:10px 12px;font-size:12px">
+    <div style="font-weight:600;margin-bottom:4px">✅ 解析成功</div>
+    <div>格式：${ext.toUpperCase()} | 事件：${data.events.length} 筆${data.categories.length?` | 類別：${data.categories.length} 個`:''}${data.recurrences.length?` | 週期：${data.recurrences.length} 個`:''}</div>
+    <div style="color:var(--text3);margin-top:3px">匯入將合併到現有資料，相同 ID 的事件會被覆蓋</div>
+  </div>`;
+  document.getElementById('import-btn').style.display='';
+}
+
+function doImport(){
+  if(!importData) return;
+  // Merge categories
+  importData.categories.forEach(c=>{
+    if(!categories.find(x=>x.id===c.id)) categories.push(c);
+  });
+  // Merge recurrences
+  importData.recurrences.forEach(r=>{
+    const idx=recurrences.findIndex(x=>x.id===r.id);
+    if(idx>=0) recurrences[idx]=r; else recurrences.push(r);
+  });
+  // Merge events
+  importData.events.forEach(ev=>{
+    const idx=events.findIndex(e=>e.id===ev.id);
+    if(idx>=0) events[idx]=ev; else events.push(ev);
+  });
+  activeFilter=new Set(categories.map(c=>c.id));
+  save();closeImportModal();render();buildCatSelect();
+  toast(`匯入完成，共 ${importData.events.length} 筆事件`);
+}
+
+// ─── Toast ────────────────────────────────────────────────
+function toast(msg,cls=''){
+  const container=document.getElementById('toast-container');
+  const t=document.createElement('div');
+  t.className='toast'+(cls?' '+cls:'');
+  t.textContent=msg;
+  container.appendChild(t);
+  setTimeout(()=>t.remove(),3500);
+}
+
+// ─── Close modals on bg click ─────────────────────────────
+document.querySelectorAll('.overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('open');});
+});
+
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.ac-wrap')) document.getElementById('ac-list').className='ac-list';
+});
+
+init();
+</script>
+</body>
+</html>
