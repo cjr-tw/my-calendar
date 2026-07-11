@@ -7,1138 +7,1392 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#f7f8fa;--surface:#fff;--border:#e4e6ea;--border2:#c8ccd4;
+  --bg:#f4f5f7;--surface:#fff;--border:#e2e5ea;--border2:#c5c9d3;
   --text:#1a1d23;--text2:#5a6072;--text3:#9aa0b0;
-  --blue:#2563eb;--blue-bg:#eff4ff;
+  --blue:#2563eb;--blue-bg:#eff4ff;--blue-lt:#dbeafe;
+  --red:#dc2626;--green:#16a34a;--amber:#d97706;
   --radius:8px;--radius-lg:12px;
-  --shadow:0 1px 4px rgba(0,0,0,.08);
+  --shadow:0 1px 4px rgba(0,0,0,.08),0 0 0 1px rgba(0,0,0,.04);
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang TC','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
-a{color:var(--blue);text-decoration:none}
 button{font-family:inherit;cursor:pointer}
-input,select,textarea{font-family:inherit;font-size:14px}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
 
-/* Layout */
-.app{display:flex;flex-direction:column;height:100vh}
-.topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
-.topbar h1{font-size:16px;font-weight:600;color:var(--text)}
-.topbar .logo{width:28px;height:28px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0}
-.topbar .spacer{flex:1}
-.topbar-btn{padding:5px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:13px;display:flex;align-items:center;gap:5px}
-.topbar-btn:hover{background:var(--bg)}
-.topbar-btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
-.topbar-btn.primary:hover{background:#1d4ed8}
+/* ── Layout ── */
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.topbar{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.topbar h1{font-size:15px;font-weight:700;color:var(--text);margin-right:4px}
+.logo{width:26px;height:26px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0}
+.spacer{flex:1}
+.tbtn{padding:5px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:12px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.tbtn:hover{background:var(--bg)}
+.tbtn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.tbtn.primary:hover{background:#1d4ed8}
+.tbtn.danger{color:var(--red);border-color:#fca5a5}
+.tbtn.danger:hover{background:#fee2e2}
 
 .main{display:flex;flex:1;overflow:hidden}
-.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:12px 0}
+.sidebar{width:210px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
 .content{flex:1;overflow:hidden;display:flex;flex-direction:column}
 
-/* Sidebar */
-.sidebar-section{padding:4px 12px 8px}
-.sidebar-section h3{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;padding-left:4px}
-.cat-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;user-select:none}
-.cat-item:hover{background:var(--bg)}
-.cat-check{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;transition:all .15s}
-.cat-check.on{border-color:transparent}
-.cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.cat-name{font-size:13px;color:var(--text);flex:1}
-.cat-count{font-size:11px;color:var(--text3);min-width:16px;text-align:right}
-.cat-add-btn{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;color:var(--text3);font-size:13px;cursor:pointer;width:100%;background:none;border:none;margin-top:4px}
-.cat-add-btn:hover{background:var(--bg);color:var(--text2)}
+/* ── Sidebar ── */
+.sb-section{padding:10px 12px 6px}
+.sb-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;padding:0 4px}
+.cat-row{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;cursor:pointer;user-select:none;position:relative}
+.cat-row:hover{background:var(--bg)}
+.cat-row.dragging{opacity:.4}
+.cat-row.drag-over{border-top:2px solid var(--blue)}
+.chk{width:13px;height:13px;border-radius:3px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;transition:all .15s}
+.chk.on{border-color:transparent}
+.cat-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.cat-label{font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cat-cnt{font-size:10px;color:var(--text3);min-width:14px;text-align:right}
+.sub-row{padding-left:22px}
+.sub-row .cat-dot{width:7px;height:7px}
+.drag-handle{color:var(--text3);font-size:12px;cursor:grab;padding:0 2px;opacity:0}
+.cat-row:hover .drag-handle{opacity:1}
 
-.sidebar-section2{padding:8px 12px;border-top:1px solid var(--border);margin-top:8px}
-.mini-action{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;color:var(--text2);font-size:13px;cursor:pointer;width:100%;background:none;border:none}
-.mini-action:hover{background:var(--bg)}
-.mini-action svg{width:15px;height:15px;opacity:.7}
+.sb-actions{margin-top:auto;padding:10px 12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+.sb-btn{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;color:var(--text2);font-size:12px;cursor:pointer;background:none;border:none;width:100%;text-align:left}
+.sb-btn:hover{background:var(--bg)}
 
-/* Calendar header */
-.cal-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
-.month-nav{display:flex;align-items:center;gap:4px}
-.month-nav button{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:16px;display:flex;align-items:center;justify-content:center}
-.month-nav button:hover{background:var(--bg)}
-.month-label{font-size:16px;font-weight:600;min-width:110px;text-align:center}
-.today-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:12px}
-.today-btn:hover{background:var(--bg)}
-.view-btns{display:flex;gap:2px;margin-left:auto}
-.view-btn{padding:4px 10px;border-radius:6px;border:1px solid transparent;background:none;color:var(--text2);font-size:12px}
-.view-btn.active{background:var(--blue-bg);color:var(--blue);border-color:#bfdbfe}
-.view-btn:hover:not(.active){background:var(--bg)}
+/* ── Cal header ── */
+.cal-header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.mnav{display:flex;align-items:center;gap:3px}
+.mnav button{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:15px;display:flex;align-items:center;justify-content:center}
+.mnav button:hover{background:var(--bg)}
+.mlabel{font-size:15px;font-weight:600;min-width:116px;text-align:center}
+.view-tabs{display:flex;gap:2px;background:var(--bg);border-radius:7px;padding:2px;border:1px solid var(--border)}
+.vtab{padding:3px 10px;border-radius:5px;border:none;background:none;color:var(--text2);font-size:12px;cursor:pointer}
+.vtab.active{background:var(--surface);color:var(--blue);font-weight:600;box-shadow:var(--shadow)}
 
-/* Calendar grid */
-.cal-grid-wrap{flex:1;overflow-y:auto}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
-.cal-day-header{padding:6px 4px;text-align:center;font-size:11px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:2}
-.cal-cell{min-height:90px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:4px;position:relative;cursor:pointer;transition:background .1s}
-.cal-cell:nth-child(7n){border-right:none}
-.cal-cell:hover{background:#f0f4ff}
-.cal-cell.other{background:#fafbfc}
-.cal-cell.other .day-num{opacity:.3}
-.cal-cell.today .day-num{background:var(--blue);color:#fff;border-radius:50%}
-.cal-cell.today{background:#f8faff}
-.day-num{width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;margin-bottom:2px;border-radius:50%}
-.ev-chip{border-radius:3px;padding:1px 5px 1px 4px;font-size:11px;font-weight:500;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:3px;cursor:pointer}
-.ev-chip .notif-dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.8);flex-shrink:0}
-.ev-chip .ev-num{font-size:9px;opacity:.75;font-weight:400}
-.more-link{font-size:10px;color:var(--text3);padding:1px 4px;cursor:pointer}
-.more-link:hover{color:var(--blue)}
+/* ── Search bar ── */
+.search-wrap{position:relative;margin-left:auto}
+.search-wrap input{padding:5px 10px 5px 28px;border:1px solid var(--border2);border-radius:20px;font-size:12px;width:180px;background:var(--surface)}
+.search-wrap input:focus{outline:none;border-color:var(--blue);width:220px;transition:width .2s}
+.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none}
+.search-results{position:absolute;top:110%;right:0;width:320px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;max-height:300px;overflow-y:auto;display:none}
+.search-results.open{display:block}
+.sr-item{padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px}
+.sr-item:last-child{border-bottom:none}
+.sr-item:hover{background:var(--blue-bg)}
+.sr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.sr-title{font-size:13px;font-weight:500}
+.sr-meta{font-size:11px;color:var(--text3)}
+.sr-del{margin-left:auto;padding:2px 6px;border-radius:4px;border:1px solid #fca5a5;background:none;color:var(--red);font-size:11px;cursor:pointer;flex-shrink:0}
 
-/* List view */
-.list-view{padding:16px;overflow-y:auto;flex:1}
-.list-date-group{margin-bottom:16px}
-.list-date-label{font-size:12px;font-weight:600;color:var(--text3);margin-bottom:6px;display:flex;align-items:center;gap:8px}
-.list-date-label::after{content:'';flex:1;height:1px;background:var(--border)}
-.list-ev{display:flex;align-items:stretch;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);margin-bottom:6px;overflow:hidden;cursor:pointer}
-.list-ev:hover{border-color:var(--blue);box-shadow:0 0 0 2px #dbeafe}
-.list-ev .color-bar{width:5px;flex-shrink:0}
-.list-ev-body{padding:8px 12px;flex:1}
-.list-ev-title{font-size:13px;font-weight:500;margin-bottom:3px;display:flex;align-items:center;gap:6px}
-.list-ev-meta{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:10px}
-.notif-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;background:#fff7ed;color:#c2410c;padding:1px 5px;border-radius:10px;border:1px solid #fed7aa}
+/* ── Month grid ── */
+.cal-wrap{flex:1;overflow-y:auto}
+.month-grid{display:grid;grid-template-columns:repeat(7,1fr);min-width:560px}
+.dh{padding:5px 4px;text-align:center;font-size:11px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:3}
+.dcell{min-height:100px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:3px;position:relative;cursor:pointer;transition:background .1s;vertical-align:top}
+.dcell:nth-child(7n){border-right:none}
+.dcell:hover{background:#f0f4ff}
+.dcell.other{background:#fafbfc}
+.dcell.other .dnum{opacity:.28}
+.dcell.today .dnum{background:var(--blue);color:#fff;border-radius:50%}
+.dcell.today{background:#f5f8ff}
+.dnum{width:21px;height:21px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;margin-bottom:2px;border-radius:50%}
+/* Gantt bar row */
+.gantt-bar-row{height:6px;margin-bottom:1px;border-radius:3px;position:relative;cursor:pointer}
+/* Event chip */
+.echip{border-radius:3px;padding:1px 4px;font-size:10px;margin-bottom:1px;display:flex;align-items:flex-start;gap:2px;cursor:pointer;position:relative;min-height:16px;word-break:break-word;white-space:pre-wrap;line-height:1.3}
+.echip.done{opacity:.45;text-decoration:line-through}
+.echip .etime{font-size:9px;opacity:.8;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.echip .etitle{flex:1;word-break:break-word}
+.echip .enum{font-size:8px;opacity:.6;flex-shrink:0}
+.echip .enotif{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.85);flex-shrink:0;margin-top:3px}
+.more-lnk{font-size:10px;color:var(--text3);padding:1px 4px;cursor:pointer}
+.more-lnk:hover{color:var(--blue)}
 
-/* Modal overlay */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;align-items:flex-start;justify-content:center;padding-top:60px}
+/* ── Year view ── */
+.year-view{flex:1;overflow:auto;padding:14px}
+.year-grid{display:grid;grid-template-columns:120px repeat(12,1fr);min-width:900px}
+.yg-header{font-size:11px;font-weight:600;color:var(--text3);padding:4px 6px;border-bottom:1px solid var(--border);text-align:center;position:sticky;top:0;background:var(--surface);z-index:2}
+.yg-label{font-size:11px;color:var(--text2);padding:3px 6px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--surface);position:sticky;left:0;z-index:1;cursor:pointer}
+.yg-label:hover{background:var(--blue-bg);color:var(--blue)}
+.yg-cell{border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:2px 3px;min-height:22px;position:relative;cursor:pointer}
+.yg-cell:hover{background:#f0f4ff}
+.yg-bar{height:10px;border-radius:3px;margin:2px 0}
+.yg-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin:3px 2px;cursor:pointer}
+
+/* ── List view ── */
+.list-view{flex:1;overflow-y:auto;padding:14px}
+.ldg{margin-bottom:14px}
+.ldg-label{font-size:11px;font-weight:700;color:var(--text3);margin-bottom:5px;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:.04em}
+.ldg-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.lev{display:flex;align-items:stretch;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);margin-bottom:5px;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.lev:hover{border-color:var(--blue)}
+.lev.done{opacity:.5}
+.lev .cbar{width:4px;flex-shrink:0}
+.lev-body{padding:7px 10px;flex:1}
+.lev-title{font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.lev-title.done{text-decoration:line-through;opacity:.6}
+.lev-meta{font-size:11px;color:var(--text3);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.lev-chk{padding:7px 10px;display:flex;align-items:center;flex-shrink:0}
+.done-chk{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;cursor:pointer;transition:all .15s}
+.done-chk.on{background:var(--green);border-color:var(--green)}
+
+/* ── Badges / tags ── */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:500}
+.badge.notif{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+.badge.recur{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.badge.id{background:var(--bg);color:var(--text3);border:1px solid var(--border);font-family:monospace}
+.badge.sub{background:var(--blue-lt);color:#1d4ed8}
+.badge.done-b{background:#f0fdf4;color:#15803d}
+
+/* ── Modals ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:500;display:none;align-items:flex-start;justify-content:center;padding:48px 12px 12px;overflow-y:auto}
 .overlay.open{display:flex}
-.modal{background:var(--surface);border-radius:var(--radius-lg);width:480px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.18)}
-.modal-header{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
-.modal-header h2{font-size:15px;font-weight:600;flex:1}
-.modal-close{width:28px;height:28px;border-radius:6px;border:none;background:none;color:var(--text3);font-size:18px;display:flex;align-items:center;justify-content:center}
-.modal-close:hover{background:var(--bg);color:var(--text)}
-.modal-body{padding:16px 18px;overflow-y:auto;flex:1}
-.modal-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
-.modal-footer .spacer{flex:1}
+.modal{background:var(--surface);border-radius:var(--radius-lg);width:520px;max-width:100%;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.18);margin:auto}
+.modal.sm{width:400px}
+.modal.lg{width:680px}
+.mh{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.mh h2{font-size:15px;font-weight:600;flex:1}
+.mclose{width:28px;height:28px;border-radius:6px;border:none;background:none;color:var(--text3);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.mclose:hover{background:var(--bg)}
+.mbody{padding:16px 18px;overflow-y:auto;max-height:70vh}
+.mfoot{padding:11px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.mfoot .spacer{flex:1}
 
-/* Form */
-.field{margin-bottom:14px}
-.field label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px}
+/* ── Form ── */
+.field{margin-bottom:13px}
+.field label,.flabel{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
 .field input,.field select,.field textarea{width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);transition:border-color .15s}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--blue)}
-.field textarea{resize:vertical;min-height:56px}
-.field .hint{font-size:11px;color:var(--text3);margin-top:3px}
+.field textarea{resize:vertical;min-height:52px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.hint{font-size:10px;color:var(--text3);margin-top:3px}
+.toggle-row{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.toggle-row label{font-size:13px;color:var(--text);cursor:pointer}
+.tog{width:34px;height:18px;border-radius:9px;border:none;position:relative;cursor:pointer;transition:background .18s;flex-shrink:0}
+.tog.on{background:var(--blue)}.tog.off{background:var(--border2)}
+.tog::after{content:'';width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;top:2px;transition:left .18s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tog.on::after{left:18px}.tog.off::after{left:2px}
 
-.toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.toggle-row label{font-size:13px;color:var(--text)}
-.toggle{width:36px;height:20px;border-radius:10px;border:none;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
-.toggle.on{background:var(--blue)}.toggle.off{background:var(--border2)}
-.toggle::after{content:'';width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;transition:left .2s}
-.toggle.on::after{left:18px}.toggle.off::after{left:2px}
-
-/* Autocomplete */
+/* ── Autocomplete ── */
 .ac-wrap{position:relative}
-.ac-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);z-index:50;box-shadow:var(--shadow);max-height:160px;overflow-y:auto;display:none}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);z-index:600;box-shadow:var(--shadow);max-height:160px;overflow-y:auto;display:none}
 .ac-list.open{display:block}
 .ac-item{padding:7px 10px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px}
 .ac-item:hover,.ac-item.sel{background:var(--blue-bg)}
-.ac-badge{font-size:10px;color:var(--text3);background:var(--bg);border-radius:4px;padding:1px 5px;margin-left:auto}
+.ac-badge{font-size:10px;color:var(--text3);background:var(--bg);border-radius:4px;padding:1px 5px;margin-left:auto;white-space:nowrap}
 
-/* Color picker */
-.color-grid{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-.color-swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s}
-.color-swatch.sel{border-color:#000;transform:scale(1.15)}
+/* ── Color grid ── */
+.color-grid{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.cswatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s;flex-shrink:0}
+.cswatch.sel{border-color:var(--text);transform:scale(1.18)}
 
-/* Category modal */
-.cat-modal-list{display:flex;flex-direction:column;gap:4px}
-.cat-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;border:1px solid var(--border)}
-.cat-row-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
-.cat-row-name{flex:1;font-size:13px}
-.cat-row-del{padding:2px 8px;border-radius:5px;border:1px solid var(--border);background:none;color:var(--text3);font-size:12px;cursor:pointer}
-.cat-row-del:hover{background:#fee2e2;color:#dc2626;border-color:#fca5a5}
+/* ── Category manager ── */
+.catmgr-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:1px solid var(--border);margin-bottom:5px;background:var(--surface)}
+.catmgr-row.sub{margin-left:20px;border-style:dashed}
+.catmgr-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.catmgr-name{font-size:13px;flex:1;font-weight:500}
+.catmgr-btn{padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:none;font-size:11px;color:var(--text2);cursor:pointer}
+.catmgr-btn:hover{background:var(--bg)}
+.catmgr-btn.del:hover{background:#fee2e2;color:var(--red);border-color:#fca5a5}
 
-/* Recur modal */
-.recur-section{background:var(--bg);border-radius:var(--radius);padding:12px;margin-bottom:10px}
-.recur-section h4{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px}
+/* ── Recur panel ── */
+.recur-panel{background:var(--bg);border-radius:var(--radius);padding:12px;margin-bottom:10px;border:1px solid var(--border)}
+.recur-panel h4{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
 
-/* Buttons */
-.btn{padding:6px 14px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:13px;display:inline-flex;align-items:center;gap:5px}
-.btn:hover{background:var(--bg)}
-.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
-.btn.primary:hover{background:#1d4ed8}
-.btn.danger{color:#dc2626;border-color:#fca5a5}
-.btn.danger:hover{background:#fee2e2}
-.btn.sm{padding:4px 10px;font-size:12px}
-
-/* Notification toast */
-.toast-container{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px}
-.toast{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;box-shadow:0 4px 16px rgba(0,0,0,.12);font-size:13px;display:flex;align-items:center;gap:8px;animation:slidein .25s ease}
-@keyframes slidein{from{transform:translateX(60px);opacity:0}to{transform:none;opacity:1}}
-.toast.notif{border-left:4px solid var(--blue)}
-
-/* ID badge */
-.id-badge{display:inline-block;font-size:10px;font-weight:600;color:var(--text3);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;letter-spacing:.03em}
-
-/* Export/Import */
-.file-drop{border:2px dashed var(--border2);border-radius:var(--radius);padding:24px;text-align:center;color:var(--text3);cursor:pointer;transition:border-color .15s}
-.file-drop:hover,.file-drop.drag{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
-.file-drop input{display:none}
-
-/* Responsive */
-@media(max-width:640px){
-  .sidebar{display:none}
-  .modal{width:98vw}
+/* ── Print ── */
+@media print{
+  .topbar,.sidebar,.cal-header,.overlay,.toast-container{display:none!important}
+  .main,.content,.app{display:block!important;height:auto!important;overflow:visible!important}
+  .cal-wrap,.list-view,.year-view{overflow:visible!important;height:auto!important}
+  .month-grid{page-break-inside:avoid}
+  body{background:#fff}
 }
+.print-overlay{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:800;display:none;align-items:center;justify-content:center}
+.print-overlay.open{display:flex}
+.print-box{background:var(--surface);border-radius:var(--radius-lg);padding:24px;width:380px;box-shadow:0 8px 40px rgba(0,0,0,.18)}
+
+/* ── Toast ── */
+.toast-container{position:fixed;bottom:18px;right:18px;z-index:999;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.toast{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:9px 14px;font-size:13px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);pointer-events:all;animation:tin .22s ease}
+@keyframes tin{from{transform:translateX(50px);opacity:0}to{transform:none;opacity:1}}
+
+/* ── Excel import ── */
+.excel-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.excel-table th,.excel-table td{border:1px solid var(--border);padding:5px 8px;text-align:left}
+.excel-table th{background:var(--bg);font-weight:600;color:var(--text2)}
+.excel-table tr:hover td{background:var(--blue-bg)}
+.excel-table td input,.excel-table td select{border:none;background:transparent;font-size:12px;width:100%;outline:none;color:var(--text)}
+.excel-table td input:focus{background:var(--blue-lt)}
+.req-mark{color:var(--red)}
+
+/* ── Clear modal ── */
+.clear-opt{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;border:1px solid var(--border);margin-bottom:6px;cursor:pointer}
+.clear-opt:hover{background:var(--bg)}
+.clear-opt input[type=radio]{accent-color:var(--blue)}
+
+@media(max-width:600px){.sidebar{display:none}.modal{width:98vw}}
 </style>
 </head>
 <body>
-<div class="app" id="app">
-  <!-- Topbar -->
-  <div class="topbar">
-    <div class="logo">📅</div>
-    <h1>行事曆</h1>
-    <div class="spacer"></div>
-    <button class="topbar-btn" onclick="openExportModal()">⬇ 匯出</button>
-    <button class="topbar-btn" onclick="openImportModal()">⬆ 匯入</button>
-    <button class="topbar-btn" onclick="openCatModal()">🏷 類別管理</button>
-    <button class="topbar-btn" onclick="clearAllData()" style="color:#dc2626;border-color:#fca5a5">🗑 清空資料</button>
-    <button class="topbar-btn primary" onclick="openEventModal(null,null)">＋ 新增事件</button>
+<div class="app">
+
+<!-- ═══ TOPBAR ═══ -->
+<div class="topbar">
+  <div class="logo">📅</div>
+  <h1>行事曆</h1>
+  <div class="spacer"></div>
+  <button class="tbtn" onclick="openExcelImport()">📊 Excel 速匯入</button>
+  <button class="tbtn" onclick="openExport()">⬇ 匯出</button>
+  <button class="tbtn" onclick="openImport()">⬆ 匯入</button>
+  <button class="tbtn" onclick="openCatMgr()">🏷 類別</button>
+  <button class="tbtn" onclick="openPrint()">🖨 列印</button>
+  <button class="tbtn danger" onclick="openClear()">🗑 清空</button>
+  <button class="tbtn primary" onclick="openEvModal(null,null)">＋ 新增</button>
+</div>
+
+<div class="main">
+<!-- ═══ SIDEBAR ═══ -->
+<div class="sidebar">
+  <div class="sb-section">
+    <div class="sb-title">類別篩選</div>
+    <div id="cat-filter"></div>
   </div>
-
-  <div class="main">
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <div class="sidebar-section">
-        <h3>類別篩選</h3>
-        <div id="cat-filter-list"></div>
-        <button class="cat-add-btn" onclick="openCatModal()">＋ 管理類別</button>
-      </div>
-      <div class="sidebar-section2">
-        <button class="mini-action" onclick="openExportModal()">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 3v10m0 0l-3.5-3.5M10 13l3.5-3.5M4 16h12"/></svg>
-          匯出行事曆
-        </button>
-        <button class="mini-action" onclick="openImportModal()">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 17V7m0 0l-3.5 3.5M10 7l3.5 3.5M4 4h12"/></svg>
-          匯入行事曆
-        </button>
-        <button class="mini-action" onclick="checkNotifications()">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 2a6 6 0 016 6v3l1.5 2.5h-15L4 11V8a6 6 0 016-6zm-1.5 14a1.5 1.5 0 003 0"/></svg>
-          檢查通知
-        </button>
-      </div>
-    </div>
-
-    <!-- Calendar content -->
-    <div class="content">
-      <div class="cal-header">
-        <div class="month-nav">
-          <button onclick="changeMonth(-1)">‹</button>
-          <span class="month-label" id="month-label"></span>
-          <button onclick="changeMonth(1)">›</button>
-        </div>
-        <button class="today-btn" onclick="goToday()">今天</button>
-        <div class="view-btns">
-          <button class="view-btn active" id="vb-month" onclick="setView('month')">月</button>
-          <button class="view-btn" id="vb-list" onclick="setView('list')">清單</button>
-        </div>
-      </div>
-      <div class="cal-grid-wrap" id="cal-grid-wrap"></div>
-      <div class="list-view" id="list-view" style="display:none"></div>
-    </div>
+  <div class="sb-actions">
+    <button class="sb-btn" onclick="openExport()">⬇ 匯出行事曆</button>
+    <button class="sb-btn" onclick="openImport()">⬆ 匯入行事曆</button>
+    <button class="sb-btn" onclick="checkNotifsManual()">🔔 測試通知</button>
   </div>
 </div>
 
-<!-- Event Modal -->
+<!-- ═══ CONTENT ═══ -->
+<div class="content">
+  <div class="cal-header">
+    <div class="mnav">
+      <button onclick="navPrev()">‹</button>
+      <span class="mlabel" id="mlabel"></span>
+      <button onclick="navNext()">›</button>
+    </div>
+    <button class="tbtn" onclick="goToday()">今天</button>
+    <div class="view-tabs">
+      <button class="vtab active" id="vt-month" onclick="setView('month')">月</button>
+      <button class="vtab" id="vt-year" onclick="setView('year')">年</button>
+      <button class="vtab" id="vt-list" onclick="setView('list')">清單</button>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="搜尋事件…" id="search-input" oninput="onSearch(this.value)" onkeydown="onSearchKey(event)" autocomplete="off">
+      <div class="search-results" id="search-results"></div>
+    </div>
+  </div>
+  <div class="cal-wrap" id="cal-wrap" style="display:none"></div>
+  <div class="year-view" id="year-view" style="display:none"></div>
+  <div class="list-view" id="list-view" style="display:none"></div>
+</div>
+</div>
+</div>
+
+<!-- ═══ EVENT MODAL ═══ -->
 <div class="overlay" id="ev-overlay">
 <div class="modal">
-  <div class="modal-header">
-    <h2 id="ev-modal-title">新增事件</h2>
-    <button class="modal-close" onclick="closeEventModal()">✕</button>
-  </div>
-  <div class="modal-body">
+  <div class="mh"><h2 id="ev-mtitle">新增事件</h2><button class="mclose" onclick="closeEvModal()">✕</button></div>
+  <div class="mbody">
     <div class="field">
-      <label>標題 <span style="color:var(--text3);font-weight:400">(輸入關鍵字自動帶入建議)</span></label>
+      <label>標題</label>
       <div class="ac-wrap">
-        <input id="ev-title" type="text" placeholder="例：下載公保繳費" oninput="onTitleInput(this.value)" onkeydown="onTitleKey(event)" autocomplete="off">
+        <input id="ev-title" type="text" placeholder="輸入事件名稱，自動帶入建議…" oninput="onACInput(this.value)" onkeydown="onACKey(event)" autocomplete="off">
         <div class="ac-list" id="ac-list"></div>
       </div>
     </div>
     <div class="row2">
       <div class="field">
-        <label>類別</label>
-        <select id="ev-cat" onchange="onCatChange()"></select>
+        <label>母類別</label>
+        <select id="ev-pcat" onchange="onPCatChange()"></select>
       </div>
       <div class="field">
+        <label>子類別 <span style="color:var(--text3);font-weight:400">(選填)</span></label>
+        <select id="ev-scat"><option value="">— 無子類別 —</option></select>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
         <label>編號 <span style="color:var(--text3);font-weight:400">(自動)</span></label>
-        <input id="ev-id" type="text" readonly style="background:var(--bg);color:var(--text3);cursor:default">
+        <input id="ev-id" readonly style="background:var(--bg);color:var(--text3);cursor:default">
+      </div>
+      <div class="field">
+        <label>完成狀態</label>
+        <div class="toggle-row" style="margin:0;padding-top:6px">
+          <button class="tog off" id="done-tog" onclick="toggleTog(this)"></button>
+          <label onclick="toggleTog(document.getElementById('done-tog'))">已完成</label>
+        </div>
       </div>
     </div>
     <!-- Time -->
     <div class="field">
       <label>時間 / 日期</label>
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-        <input type="checkbox" id="ev-allday" onchange="toggleAllDay()">
-        <label for="ev-allday" style="font-size:12px;cursor:pointer;color:var(--text2)">全天（日期段）</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="radio" name="ttype" value="time" id="tt-time" onchange="setTimeType('time')" checked> 時間段</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="radio" name="ttype" value="date" id="tt-date" onchange="setTimeType('date')"> 日期段（甘特）</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="radio" name="ttype" value="both" id="tt-both" onchange="setTimeType('both')"> 兩者都有</label>
       </div>
-      <div id="time-inputs" style="display:flex;align-items:center;gap:6px">
-        <input id="ev-dt-start" type="datetime-local" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+      <div id="time-inputs" style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <input id="ev-ts" type="datetime-local" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
         <span style="color:var(--text3)">→</span>
-        <input id="ev-dt-end" type="datetime-local" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+        <input id="ev-te" type="datetime-local" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
       </div>
       <div id="date-inputs" style="display:none;align-items:center;gap:6px">
-        <input id="ev-d-start" type="date" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+        <input id="ev-ds" type="date" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
         <span style="color:var(--text3)">→</span>
-        <input id="ev-d-end" type="date" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+        <input id="ev-de" type="date" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
       </div>
     </div>
-    <!-- Notification -->
+    <!-- Notif -->
     <div class="toggle-row">
-      <button class="toggle off" id="notif-toggle" onclick="toggleNotif(this)"></button>
-      <label>開啟通知</label>
+      <button class="tog off" id="notif-tog" onclick="toggleTog(this)"></button>
+      <label onclick="toggleTog(document.getElementById('notif-tog'))">開啟通知</label>
       <div id="notif-opts" style="display:none;margin-left:auto">
         <select id="notif-before" style="padding:4px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px">
-          <option value="0">準時通知</option>
-          <option value="5">5 分鐘前</option>
-          <option value="10">10 分鐘前</option>
-          <option value="15">15 分鐘前</option>
-          <option value="30">30 分鐘前</option>
-          <option value="60">1 小時前</option>
-          <option value="1440">1 天前</option>
-          <option value="2880">2 天前</option>
+          <option value="0">準時</option><option value="5">5分前</option><option value="10">10分前</option>
+          <option value="15" selected>15分前</option><option value="30">30分前</option>
+          <option value="60">1小時前</option><option value="1440">1天前</option><option value="2880">2天前</option>
         </select>
       </div>
     </div>
-    <!-- Recurrence -->
+    <!-- Recur -->
     <div class="toggle-row">
-      <button class="toggle off" id="recur-toggle" onclick="toggleRecur(this)"></button>
-      <label>自動同步（週期重複）</label>
+      <button class="tog off" id="recur-tog" onclick="toggleTog(this)"></button>
+      <label onclick="toggleTog(document.getElementById('recur-tog'))">自動重複（週期同步）</label>
     </div>
-    <div id="recur-opts" style="display:none">
-      <div class="recur-section">
-        <h4>重複設定</h4>
+    <div id="recur-panel" style="display:none">
+      <div class="recur-panel">
+        <h4>週期設定</h4>
         <div class="row3" style="margin-bottom:10px">
-          <div class="field" style="margin-bottom:0">
-            <label>每隔</label>
-            <input id="recur-interval" type="number" min="1" value="1" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
-          </div>
-          <div class="field" style="margin-bottom:0">
-            <label>單位</label>
-            <select id="recur-unit" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
-              <option value="day">天</option>
-              <option value="week">週</option>
-              <option value="month" selected>月</option>
-              <option value="year">年</option>
-            </select>
-          </div>
-          <div class="field" style="margin-bottom:0">
-            <label>遇假日</label>
-            <select id="recur-holiday" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
-              <option value="keep">不調整</option>
-              <option value="after">延後到平日</option>
-              <option value="before">提前到平日</option>
-            </select>
-          </div>
+          <div class="field" style="margin-bottom:0"><label>每隔</label><input id="ri" type="number" min="1" value="1" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)"></div>
+          <div class="field" style="margin-bottom:0"><label>單位</label><select id="ru" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)"><option value="day">天</option><option value="week">週</option><option value="month" selected>月</option><option value="year">年</option></select></div>
+          <div class="field" style="margin-bottom:0"><label>遇假日</label><select id="rh" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)"><option value="keep">不調整</option><option value="after">延後平日</option><option value="before">提前平日</option></select></div>
         </div>
         <div class="row2">
-          <div class="field" style="margin-bottom:0">
-            <label>停止日期（選填）</label>
-            <input id="recur-until" type="date" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);width:100%">
-          </div>
-          <div class="field" style="margin-bottom:0">
-            <label>最多重複次數（選填）</label>
-            <input id="recur-count" type="number" min="1" placeholder="不限" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);width:100%">
-          </div>
+          <div class="field" style="margin-bottom:0"><label>停止日期</label><input id="ru2" type="date" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);width:100%"></div>
+          <div class="field" style="margin-bottom:0"><label>最多次數</label><input id="rc" type="number" min="1" placeholder="不限" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);width:100%"></div>
         </div>
-        <div class="hint" style="margin-top:8px;font-size:11px;color:var(--text3)">
-          ✦ 每月5號：間隔 1 月，遇假日可設定延後或提前
-        </div>
+        <div class="hint" style="margin-top:6px">每月5號範例：間隔1月，遇假日延後</div>
       </div>
     </div>
     <div class="field">
-      <label>備註</label>
-      <textarea id="ev-note" placeholder="選填"></textarea>
+      <label>備註（支援換行）</label>
+      <textarea id="ev-note" placeholder="可多行輸入…" rows="3"></textarea>
     </div>
   </div>
-  <div class="modal-footer">
-    <button class="btn danger" id="ev-del-btn" style="display:none" onclick="deleteEvent()">🗑 刪除</button>
-    <button class="btn danger sm" id="ev-del-series-btn" style="display:none" onclick="deleteEventSeries()">刪除全系列</button>
+  <div class="mfoot">
+    <button class="tbtn danger" id="ev-del" style="display:none" onclick="delEvent()">🗑 刪除</button>
+    <button class="tbtn danger" id="ev-del-series" style="display:none" onclick="delSeries()">刪除整個系列</button>
     <div class="spacer"></div>
-    <button class="btn" onclick="closeEventModal()">取消</button>
-    <button class="btn primary" onclick="saveEvent()">💾 儲存</button>
+    <button class="tbtn" onclick="closeEvModal()">取消</button>
+    <button class="tbtn primary" onclick="saveEvent()">💾 儲存</button>
   </div>
 </div>
 </div>
 
-<!-- Category Modal -->
+<!-- ═══ CATEGORY MANAGER MODAL ═══ -->
 <div class="overlay" id="cat-overlay">
-<div class="modal" style="width:400px">
-  <div class="modal-header">
-    <h2>類別管理</h2>
-    <button class="modal-close" onclick="closeCatModal()">✕</button>
-  </div>
-  <div class="modal-body">
-    <div class="cat-modal-list" id="cat-modal-list"></div>
-    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
-      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">新增類別</div>
+<div class="modal sm">
+  <div class="mh"><h2>類別管理</h2><button class="mclose" onclick="closeCatMgr()">✕</button></div>
+  <div class="mbody">
+    <div id="catmgr-list"></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:8px">
+      <div class="flabel" style="margin-bottom:8px">新增類別</div>
+      <div class="row2" style="margin-bottom:8px">
+        <div class="field" style="margin-bottom:0"><label>名稱</label><input id="nc-name" placeholder="類別名稱"></div>
+        <div class="field" style="margin-bottom:0"><label>母類別（空=母）</label>
+          <select id="nc-parent"><option value="">— 設為母類別 —</option></select></div>
+      </div>
       <div class="row2" style="margin-bottom:10px">
-        <div class="field" style="margin-bottom:0">
-          <label>名稱</label>
-          <input id="new-cat-name" type="text" placeholder="類別名稱">
-        </div>
-        <div class="field" style="margin-bottom:0">
-          <label>文字色</label>
-          <input id="new-cat-text" type="color" value="#ffffff" style="height:36px;padding:2px 4px;cursor:pointer;border:1px solid var(--border2);border-radius:var(--radius);width:100%">
-        </div>
+        <div class="field" style="margin-bottom:0"><label>底色</label><div class="color-grid" id="nc-colors"></div></div>
+        <div class="field" style="margin-bottom:0"><label>文字色</label><input id="nc-text" type="color" value="#ffffff" style="height:34px;padding:2px 4px;cursor:pointer;border:1px solid var(--border2);border-radius:var(--radius);width:100%"></div>
       </div>
-      <div class="field">
-        <label>底色</label>
-        <div class="color-grid" id="color-grid"></div>
-      </div>
-      <button class="btn primary" style="width:100%" onclick="addCategory()">新增類別</button>
+      <button class="tbtn primary" style="width:100%" onclick="addCat()">＋ 新增</button>
     </div>
   </div>
-  <div class="modal-footer">
-    <div class="spacer"></div>
-    <button class="btn primary" onclick="closeCatModal()">完成</button>
-  </div>
+  <div class="mfoot"><div class="spacer"></div><button class="tbtn primary" onclick="closeCatMgr()">完成</button></div>
 </div>
 </div>
 
-<!-- Export Modal -->
-<div class="overlay" id="export-overlay">
-<div class="modal" style="width:380px">
-  <div class="modal-header">
-    <h2>匯出行事曆</h2>
-    <button class="modal-close" onclick="closeExportModal()">✕</button>
+<!-- ═══ EDIT CATEGORY MODAL ═══ -->
+<div class="overlay" id="editcat-overlay">
+<div class="modal sm">
+  <div class="mh"><h2>編輯類別</h2><button class="mclose" onclick="closeEditCat()">✕</button></div>
+  <div class="mbody">
+    <div class="field"><label>名稱</label><input id="ec-name"></div>
+    <div class="field"><label>底色</label><div class="color-grid" id="ec-colors"></div></div>
+    <div class="field"><label>文字色</label><input id="ec-text" type="color" style="height:34px;padding:2px 4px;cursor:pointer;border:1px solid var(--border2);border-radius:var(--radius);width:100%"></div>
   </div>
-  <div class="modal-body">
-    <div class="field">
-      <label>日期範圍（選填，留空匯出全部）</label>
-      <div class="row2">
-        <input id="export-from" type="date" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
-        <input id="export-to" type="date" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
-      </div>
+  <div class="mfoot"><div class="spacer"></div><button class="tbtn" onclick="closeEditCat()">取消</button><button class="tbtn primary" onclick="saveEditCat()">儲存</button></div>
+</div>
+</div>
+
+<!-- ═══ EXPORT MODAL ═══ -->
+<div class="overlay" id="export-overlay">
+<div class="modal sm">
+  <div class="mh"><h2>匯出行事曆</h2><button class="mclose" onclick="closeExport()">✕</button></div>
+  <div class="mbody">
+    <div class="row2" style="margin-bottom:12px">
+      <div class="field" style="margin-bottom:0"><label>起始日期</label><input id="exp-from" type="date"></div>
+      <div class="field" style="margin-bottom:0"><label>結束日期</label><input id="exp-to" type="date"></div>
     </div>
-    <div class="field">
-      <label>格式</label>
-      <select id="export-fmt" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);width:100%">
-        <option value="json">JSON（完整備份，可再匯入）</option>
-        <option value="csv">CSV（Excel 開啟）</option>
-        <option value="ics">ICS（Google 日曆 / Apple 日曆）</option>
+    <div class="field"><label>格式</label>
+      <select id="exp-fmt">
+        <option value="json">JSON（完整備份）</option>
+        <option value="csv">CSV（Excel）</option>
+        <option value="ics">ICS（Google/Apple 日曆）</option>
       </select>
     </div>
-    <div style="font-size:12px;color:var(--text3)">
-      ✦ JSON 格式可完整備份再匯入本系統<br>
-      ✦ ICS 可直接匯入 Google 日曆 / Outlook
-    </div>
+    <div class="hint">JSON 可完整還原 ‧ ICS 可匯入 Google 日曆</div>
   </div>
-  <div class="modal-footer">
-    <div class="spacer"></div>
-    <button class="btn" onclick="closeExportModal()">取消</button>
-    <button class="btn primary" onclick="doExport()">⬇ 下載匯出</button>
-  </div>
+  <div class="mfoot"><div class="spacer"></div><button class="tbtn" onclick="closeExport()">取消</button><button class="tbtn primary" onclick="doExport()">⬇ 下載</button></div>
 </div>
 </div>
 
-<!-- Import Modal -->
+<!-- ═══ IMPORT MODAL ═══ -->
 <div class="overlay" id="import-overlay">
-<div class="modal" style="width:380px">
-  <div class="modal-header">
-    <h2>匯入行事曆</h2>
-    <button class="modal-close" onclick="closeImportModal()">✕</button>
-  </div>
-  <div class="modal-body">
-    <div class="file-drop" id="file-drop" onclick="document.getElementById('import-file').click()" ondragover="onDragOver(event)" ondrop="onDrop(event)">
-      <input type="file" id="import-file" accept=".json,.csv,.ics" onchange="onFileSelect(event)">
-      <div style="font-size:24px;margin-bottom:8px">📂</div>
-      <div style="font-size:13px;font-weight:500;margin-bottom:4px">點擊或拖曳檔案到此處</div>
-      <div style="font-size:12px">支援 JSON / CSV / ICS 格式</div>
+<div class="modal sm">
+  <div class="mh"><h2>匯入行事曆</h2><button class="mclose" onclick="closeImport()">✕</button></div>
+  <div class="mbody">
+    <div id="imp-drop" style="border:2px dashed var(--border2);border-radius:var(--radius);padding:24px;text-align:center;color:var(--text3);cursor:pointer" onclick="document.getElementById('imp-file').click()" ondragover="event.preventDefault()" ondrop="onImpDrop(event)">
+      <input type="file" id="imp-file" accept=".json,.csv,.ics" style="display:none" onchange="onImpFile(event)">
+      <div style="font-size:24px;margin-bottom:6px">📂</div>
+      <div style="font-size:13px;font-weight:500">點擊或拖曳檔案（JSON / CSV / ICS）</div>
     </div>
-    <div id="import-preview" style="margin-top:12px"></div>
+    <div id="imp-preview" style="margin-top:10px"></div>
   </div>
-  <div class="modal-footer">
-    <div class="spacer"></div>
-    <button class="btn" onclick="closeImportModal()">取消</button>
-    <button class="btn primary" id="import-btn" style="display:none" onclick="doImport()">⬆ 確認匯入</button>
-  </div>
+  <div class="mfoot"><div class="spacer"></div><button class="tbtn" onclick="closeImport()">取消</button><button class="tbtn primary" id="imp-btn" style="display:none" onclick="doImport()">⬆ 確認匯入</button></div>
 </div>
 </div>
 
-<!-- Toast container -->
-<div class="toast-container" id="toast-container"></div>
+<!-- ═══ EXCEL IMPORT MODAL ═══ -->
+<div class="overlay" id="excel-overlay">
+<div class="modal lg">
+  <div class="mh"><h2>Excel 速匯入 <span style="font-size:11px;font-weight:400;color:var(--text3)">逐列填寫後按匯入，紅色為必填</span></h2><button class="mclose" onclick="closeExcelImport()">✕</button></div>
+  <div class="mbody" style="padding:12px">
+    <div style="overflow-x:auto">
+    <table class="excel-table" id="excel-tbl">
+      <thead><tr>
+        <th>#</th>
+        <th>日期/開始 <span class="req-mark">*</span></th>
+        <th>結束日期/時間</th>
+        <th>類別 <span class="req-mark">*</span></th>
+        <th>子類別</th>
+        <th>事件名稱 <span class="req-mark">*</span></th>
+        <th>通知(分)</th>
+        <th>備註</th>
+        <th></th>
+      </tr></thead>
+      <tbody id="excel-body"></tbody>
+    </table>
+    </div>
+    <button class="tbtn" style="margin-top:8px" onclick="addExcelRow()">＋ 新增列</button>
+  </div>
+  <div class="mfoot"><div class="spacer"></div><button class="tbtn" onclick="closeExcelImport()">取消</button><button class="tbtn primary" onclick="doExcelImport()">📥 全部匯入</button></div>
+</div>
+</div>
+
+<!-- ═══ CLEAR MODAL ═══ -->
+<div class="overlay" id="clear-overlay">
+<div class="modal sm">
+  <div class="mh"><h2>清空事件</h2><button class="mclose" onclick="closeClear()">✕</button></div>
+  <div class="mbody">
+    <label class="clear-opt"><input type="radio" name="clr" value="all" checked> 清空所有事件</label>
+    <label class="clear-opt"><input type="radio" name="clr" value="range"> 清空指定日期段
+      <div id="clr-range" style="display:none;margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+        <input id="clr-from" type="date" style="flex:1;padding:5px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+        <input id="clr-to" type="date" style="flex:1;padding:5px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+      </div>
+    </label>
+    <label class="clear-opt"><input type="radio" name="clr" value="search"> 依搜尋結果刪除
+      <div id="clr-search" style="display:none;margin-top:8px">
+        <input id="clr-q" type="text" placeholder="輸入關鍵字…" style="width:100%;padding:5px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+        <div id="clr-preview" style="margin-top:6px;font-size:12px;color:var(--text3)"></div>
+      </div>
+    </label>
+    <div class="hint" style="margin-top:8px">⚠️ 類別設定不受影響，建議先匯出備份</div>
+  </div>
+  <div class="mfoot"><div class="spacer"></div><button class="tbtn" onclick="closeClear()">取消</button><button class="tbtn danger" onclick="doClear()">🗑 確認清空</button></div>
+</div>
+</div>
+
+<!-- ═══ PRINT MODAL ═══ -->
+<div class="overlay" id="print-overlay">
+<div class="modal sm">
+  <div class="mh"><h2>列印設定</h2><button class="mclose" onclick="closePrint()">✕</button></div>
+  <div class="mbody">
+    <div class="row2" style="margin-bottom:12px">
+      <div class="field" style="margin-bottom:0"><label>起始月份</label><input id="pr-from" type="month"></div>
+      <div class="field" style="margin-bottom:0"><label>結束月份</label><input id="pr-to" type="month"></div>
+    </div>
+    <div class="field"><label>縮放比例</label>
+      <select id="pr-scale">
+        <option value="auto">符合頁面（自動）</option>
+        <option value="100">100%</option>
+        <option value="80">80%</option>
+        <option value="60">60%</option>
+        <option value="50">50%</option>
+      </select>
+    </div>
+    <div class="toggle-row"><input type="checkbox" id="pr-color" checked><label for="pr-color" style="font-size:13px">保留顏色</label></div>
+  </div>
+  <div class="mfoot"><div class="spacer"></div><button class="tbtn" onclick="closePrint()">取消</button><button class="tbtn primary" onclick="doPrint()">🖨 列印</button></div>
+</div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
 
 <script>
-// ─── Data ───────────────────────────────────────────────
-let categories = [
-  {id:'work',name:'工作',bg:'#2563eb',text:'#ffffff'},
-  {id:'family',name:'家庭',bg:'#059669',text:'#ffffff'},
-  {id:'personal',name:'個人',bg:'#7c3aed',text:'#ffffff'},
-  {id:'health',name:'健康',bg:'#dc2626',text:'#ffffff'},
-  {id:'task',name:'待辦',bg:'#d97706',text:'#ffffff'},
+// ══════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════
+const PALETTE=['#2563eb','#7c3aed','#059669','#dc2626','#d97706','#0891b2','#db2777','#65a30d','#ea580c','#6b7280','#1d4ed8','#7e22ce','#047857','#991b1b','#854F0B'];
+let cats=[ // {id,name,bg,text,parentId,order}
+  {id:'work',name:'工作',bg:'#2563eb',text:'#fff',parentId:null,order:0},
+  {id:'work-meet',name:'會議',bg:'#1d4ed8',text:'#fff',parentId:'work',order:0},
+  {id:'family',name:'家庭',bg:'#059669',text:'#fff',parentId:null,order:1},
+  {id:'personal',name:'個人',bg:'#7c3aed',text:'#fff',parentId:null,order:2},
+  {id:'health',name:'健康',bg:'#dc2626',text:'#fff',parentId:null,order:3},
+  {id:'task',name:'待辦',bg:'#d97706',text:'#fff',parentId:null,order:4},
+  {id:'task-insurance',name:'公保',bg:'#b45309',text:'#fff',parentId:'task',order:0},
 ];
+let events=[];
+let recurs=[];
+let activeFilter=new Set();
+let curYear,curMonth,curView='month';
+let editId=null,impData=null,editCatId=null;
+let ncColor=PALETTE[0],ecColor=PALETTE[0];
+let acIdx=-1;
 
-let events = [];
-
-let recurrences = [];
-
-let activeFilter = new Set(categories.map(c=>c.id));
-let currentYear, currentMonth, currentView='month';
-let editEventId = null;
-let importData = null;
-const PALETTE = ['#2563eb','#7c3aed','#059669','#dc2626','#d97706','#0891b2','#db2777','#65a30d','#ea580c','#6b7280','#1d4ed8','#7e22ce','#047857','#991b1b','#92400e'];
-let selectedColor = PALETTE[0];
-let acIndex = -1;
-
-// ─── Clear All ────────────────────────────────────────────
-function clearAllData(){
-  if(!confirm('確定要清空所有事件與類別嗎？\n此動作無法復原，建議先匯出備份。')) return;
-  events=[];
-  recurrences=[];
-  categories=[
-    {id:'work',name:'工作',bg:'#2563eb',text:'#ffffff'},
-    {id:'family',name:'家庭',bg:'#059669',text:'#ffffff'},
-    {id:'personal',name:'個人',bg:'#7c3aed',text:'#ffffff'},
-    {id:'health',name:'健康',bg:'#dc2626',text:'#ffffff'},
-    {id:'task',name:'待辦',bg:'#d97706',text:'#ffffff'},
-  ];
-  activeFilter=new Set(categories.map(c=>c.id));
-  save();buildCatSelect();render();
-  toast('已清空所有資料');
-}
-
-// ─── Init ────────────────────────────────────────────────
+// ══════════════════════════════════════════════
+// INIT / PERSIST
+// ══════════════════════════════════════════════
 function init(){
   load();
-  const now = new Date();
-  currentYear = now.getFullYear();
-  currentMonth = now.getMonth();
-  buildCatFilter();
-  buildColorGrid();
-  buildCatSelect();
-  render();
-  requestNotifPermission();
-  setInterval(checkNotifications, 60000);
+  const n=new Date();curYear=n.getFullYear();curMonth=n.getMonth();
+  activeFilter=new Set(cats.map(c=>c.id));
+  buildSidebar();buildCatSelects();buildNcColors();render();
+  requestNotifPerm();setInterval(checkNotifs,60000);
 }
-
 function load(){
-  try{
-    const d = localStorage.getItem('cal_data');
-    if(d){const p=JSON.parse(d);events=p.events||events;categories=p.categories||categories;recurrences=p.recurrences||recurrences;}
-  }catch(e){}
-  activeFilter = new Set(categories.map(c=>c.id));
+  try{const d=localStorage.getItem('cal2');if(d){const p=JSON.parse(d);cats=p.cats||cats;events=p.events||events;recurs=p.recurs||recurs;}}catch(e){}
+  activeFilter=new Set(cats.map(c=>c.id));
 }
-function save(){
-  localStorage.setItem('cal_data',JSON.stringify({events,categories,recurrences}));
+function save(){localStorage.setItem('cal2',JSON.stringify({cats,events,recurs}));}
+
+// ══════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════
+function fmtD(y,m,d){return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+function fmtNotif(m){if(!m)return'準時';if(m<60)return m+'分前';if(m<1440)return(m/60)+'小時前';return(m/1440)+'天前';}
+function getCat(id){return cats.find(c=>c.id===id)||{bg:'#888',text:'#fff',name:'?'};}
+function getRootCat(id){const c=cats.find(x=>x.id===id);if(!c)return null;return c.parentId?cats.find(x=>x.id===c.parentId)||c:c;}
+function parentCats(){return cats.filter(c=>!c.parentId).sort((a,b)=>a.order-b.order);}
+function subCats(pid){return cats.filter(c=>c.parentId===pid).sort((a,b)=>a.order-b.order);}
+function evColor(ev){const c=getCat(ev.subcat||ev.cat);return{bg:c.bg,text:c.text};}
+function evOnDate(ev,ds){
+  const inTime=ev.timeStart&&ev.timeStart.startsWith(ds);
+  const inDate=ev.dateStart&&ds>=ev.dateStart&&ds<=(ev.dateEnd||ev.dateStart);
+  return inTime||inDate;
+}
+function dl(content,name,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();}
+function q(s){return'"'+String(s||'').replace(/"/g,'""')+'"';}
+function toast(msg,type=''){
+  const c=document.getElementById('toasts');
+  const t=document.createElement('div');t.className='toast';
+  t.style.borderLeft=`4px solid ${type==='ok'?'#16a34a':type==='err'?'#dc2626':'#2563eb'}`;
+  t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),3500);
+}
+function toggleTog(btn){
+  const on=btn.classList.contains('off');
+  btn.className='tog '+(on?'on':'off');
+  // side effects
+  if(btn.id==='notif-tog') document.getElementById('notif-opts').style.display=on?'flex':'none';
+  if(btn.id==='recur-tog') document.getElementById('recur-panel').style.display=on?'block':'none';
 }
 
-// ─── Rendering ───────────────────────────────────────────
+// ══════════════════════════════════════════════
+// SIDEBAR
+// ══════════════════════════════════════════════
+function buildSidebar(){
+  const el=document.getElementById('cat-filter');el.innerHTML='';
+  parentCats().forEach(pc=>{
+    const subs=subCats(pc.id);
+    const row=makeCatRow(pc,false);el.appendChild(row);
+    subs.forEach(sc=>el.appendChild(makeCatRow(sc,true)));
+  });
+}
+function makeCatRow(cat,isSub){
+  const on=activeFilter.has(cat.id);
+  const div=document.createElement('div');
+  div.className='cat-row'+(isSub?' sub-row':'');
+  div.draggable=true;div.dataset.id=cat.id;
+  div.innerHTML=`<span class="drag-handle" title="拖曳排序">⠿</span>
+    <div class="chk ${on?'on':''}" style="${on?`background:${cat.bg}`:''}">✓</div>
+    <div class="cat-dot" style="background:${cat.bg}"></div>
+    <span class="cat-label">${cat.name}</span>
+    <span class="cat-cnt">${events.filter(e=>(e.cat===cat.id||e.subcat===cat.id)).length}</span>`;
+  div.addEventListener('click',()=>{
+    if(on){if(activeFilter.size>1)activeFilter.delete(cat.id);}else activeFilter.add(cat.id);
+    buildSidebar();renderCurrent();
+  });
+  div.addEventListener('dragstart',e=>{e.dataTransfer.setData('catId',cat.id);div.classList.add('dragging');});
+  div.addEventListener('dragend',()=>div.classList.remove('dragging'));
+  div.addEventListener('dragover',e=>{e.preventDefault();div.classList.add('drag-over');});
+  div.addEventListener('dragleave',()=>div.classList.remove('drag-over'));
+  div.addEventListener('drop',e=>{
+    e.preventDefault();div.classList.remove('drag-over');
+    const fromId=e.dataTransfer.getData('catId');
+    if(fromId===cat.id)return;
+    const fromC=cats.find(c=>c.id===fromId);
+    const toC=cats.find(c=>c.id===cat.id);
+    if(!fromC||!toC)return;
+    const tmp=fromC.order;fromC.order=toC.order;toC.order=tmp;
+    save();buildSidebar();
+  });
+  return div;
+}
+
+// ══════════════════════════════════════════════
+// VIEW MANAGEMENT
+// ══════════════════════════════════════════════
 function setView(v){
-  currentView=v;
-  document.getElementById('vb-month').className='view-btn'+(v==='month'?' active':'');
-  document.getElementById('vb-list').className='view-btn'+(v==='list'?' active':'');
-  document.getElementById('cal-grid-wrap').style.display=v==='month'?'block':'none';
+  curView=v;
+  ['month','year','list'].forEach(x=>{
+    document.getElementById('vt-'+x).className='vtab'+(v===x?' active':'');
+    const el=document.getElementById(v==='month'?'cal-wrap':v+'-view'||x+'-view');
+  });
+  document.getElementById('cal-wrap').style.display=v==='month'?'block':'none';
+  document.getElementById('year-view').style.display=v==='year'?'block':'none';
   document.getElementById('list-view').style.display=v==='list'?'block':'none';
-  render();
+  renderCurrent();
 }
+function renderCurrent(){if(curView==='month')renderMonth();else if(curView==='year')renderYear();else renderList();}
+function navPrev(){if(curView==='year'){curYear--;renderYear();}else{curMonth--;if(curMonth<0){curMonth=11;curYear--;}renderMonth();}}
+function navNext(){if(curView==='year'){curYear++;renderYear();}else{curMonth++;if(curMonth>11){curMonth=0;curYear++;}renderMonth();}}
+function goToday(){const n=new Date();curYear=n.getFullYear();curMonth=n.getMonth();setView('month');}
+function render(){renderCurrent();}
 
-function changeMonth(d){ currentMonth+=d; if(currentMonth>11){currentMonth=0;currentYear++;}if(currentMonth<0){currentMonth=11;currentYear--;} render(); }
-function goToday(){ const n=new Date(); currentYear=n.getFullYear(); currentMonth=n.getMonth(); render(); }
-
-function render(){
-  const mn=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
-  document.getElementById('month-label').textContent=`${currentYear} ${mn[currentMonth]}`;
-  buildCatFilter();
-  if(currentView==='month') renderMonth();
-  else renderList();
-}
-
+// ══════════════════════════════════════════════
+// MONTH VIEW
+// ══════════════════════════════════════════════
 function renderMonth(){
-  const wrap=document.getElementById('cal-grid-wrap');
-  const headers=['日','一','二','三','四','五','六'];
-  const first=new Date(currentYear,currentMonth,1).getDay();
-  const days=new Date(currentYear,currentMonth+1,0).getDate();
-  const prev=new Date(currentYear,currentMonth,0).getDate();
+  const mn=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+  document.getElementById('mlabel').textContent=`${curYear} ${mn[curMonth]}`;
+  const wrap=document.getElementById('cal-wrap');
+  const first=new Date(curYear,curMonth,1).getDay();
+  const days=new Date(curYear,curMonth+1,0).getDate();
+  const prevDays=new Date(curYear,curMonth,0).getDate();
   const today=new Date();
-
-  let html=`<div class="cal-grid">`;
-  headers.forEach(h=>html+=`<div class="cal-day-header">${h}</div>`);
-
   let cells=[];
-  for(let i=0;i<first;i++) cells.push({d:prev-first+1+i,m:currentMonth-1,y:currentYear,other:true});
-  for(let i=1;i<=days;i++) cells.push({d:i,m:currentMonth,y:currentYear,other:false});
-  while(cells.length<42) cells.push({d:cells.length-first-days+1,m:currentMonth+1,y:currentYear,other:true});
+  for(let i=0;i<first;i++)cells.push({d:prevDays-first+1+i,m:curMonth-1,y:curYear,other:true});
+  for(let i=1;i<=days;i++)cells.push({d:i,m:curMonth,y:curYear,other:false});
+  while(cells.length<42)cells.push({d:cells.length-first-days+1,m:curMonth+1,y:curYear,other:true});
 
+  let html=`<div class="month-grid">`;
+  ['日','一','二','三','四','五','六'].forEach(h=>html+=`<div class="dh">${h}</div>`);
   cells.forEach(info=>{
-    const ds=fmtDate(info.y,info.m,info.d);
+    const ds=fmtD(info.y,info.m,info.d);
     const isToday=!info.other&&info.d===today.getDate()&&info.m===today.getMonth()&&info.y===today.getFullYear();
-    const dayEvs=getVisibleEventsOnDate(ds);
-    let cls='cal-cell'+(info.other?' other':'')+(isToday?' today':'');
-    html+=`<div class="${cls}" onclick="openEventModal(null,'${ds}')">`;
-    html+=`<div class="day-num">${info.d}</div>`;
-    const show=dayEvs.slice(0,3);
-    show.forEach(ev=>{
-      const cat=categories.find(c=>c.id===ev.cat)||{bg:'#888',text:'#fff'};
-      const dot=ev.notif?`<span class="notif-dot"></span>`:'';
-      const num=ev.id?`<span class="ev-num">#${ev.id.split('-').pop()}</span>`:'';
-      html+=`<div class="ev-chip" style="background:${cat.bg};color:${cat.text}" onclick="event.stopPropagation();openEventModal('${ev.id}',null)" title="${ev.title}">${dot}${ev.title}${num}</div>`;
+    html+=`<div class="dcell${info.other?' other':''}${isToday?' today':''}" onclick="openEvModal(null,'${ds}')">`;
+    html+=`<div class="dnum">${info.d}</div>`;
+    // Regular events (time-based)
+    const timeEvs=visibleEventsOnDate(ds).filter(e=>e.timeStart&&!e.dateStart);
+    timeEvs.slice(0,3).forEach(ev=>{
+      const col=evColor(ev);
+      const time=ev.timeStart?ev.timeStart.slice(11,16):'';
+      const notifDot=ev.notif?`<span class="enotif"></span>`:'';
+      const title=ev.title||(ev.done?'✓ ':'');
+      html+=`<div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" onclick="event.stopPropagation();openEvModal('${ev.id}',null)" title="${ev.title}">
+        ${notifDot}<span class="etime">${time}</span><span class="etitle">${ev.title}</span></div>`;
     });
-    if(dayEvs.length>3) html+=`<div class="more-link" onclick="event.stopPropagation();setView('list')">＋${dayEvs.length-3} 更多</div>`;
+    // Both type events
+    const bothEvs=visibleEventsOnDate(ds).filter(e=>e.timeStart&&e.dateStart);
+    bothEvs.forEach(ev=>{
+      const col=evColor(ev);
+      const time=ev.timeStart?ev.timeStart.slice(11,16):'';
+      html+=`<div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" onclick="event.stopPropagation();openEvModal('${ev.id}',null)">
+        <span class="etime">${time}</span><span class="etitle">${ev.title}</span></div>`;
+    });
+    // Gantt bars (date-only events) — at the bottom
+    const ganttEvs=visibleEventsOnDate(ds).filter(e=>e.dateStart&&!e.timeStart);
+    ganttEvs.forEach(ev=>{
+      const col=evColor(ev);
+      const isStart=ev.dateStart===ds;
+      const isEnd=(ev.dateEnd||ev.dateStart)===ds;
+      const style=`background:${col.bg};margin-left:${isStart?'0':'-4px'};margin-right:${isEnd?'0':'-4px'};border-radius:${isStart?'3px':0} ${isEnd?'3px':0} ${isEnd?'3px':0} ${isStart?'3px':0}`;
+      html+=`<div class="gantt-bar-row" style="${style}" onclick="event.stopPropagation();openEvModal('${ev.id}',null)" title="${ev.title}"></div>`;
+    });
+    if((timeEvs.length+bothEvs.length)>3)html+=`<div class="more-lnk" onclick="event.stopPropagation();setView('list')">＋${(timeEvs.length+bothEvs.length)-3}</div>`;
     html+=`</div>`;
   });
   html+=`</div>`;
   wrap.innerHTML=html;
 }
 
-function renderList(){
-  const lv=document.getElementById('list-view');
-  const visEvs=events.filter(ev=>activeFilter.has(ev.cat)).sort((a,b)=>a.start.localeCompare(b.start));
-  if(!visEvs.length){lv.innerHTML=`<div style="text-align:center;color:var(--text3);padding:40px">目前沒有符合的事件</div>`;return;}
-  const grouped={};
-  visEvs.forEach(ev=>{
-    const key=ev.start.slice(0,10);
-    if(!grouped[key]) grouped[key]=[];
-    grouped[key].push(ev);
+// ══════════════════════════════════════════════
+// YEAR VIEW (Gantt style)
+// ══════════════════════════════════════════════
+function renderYear(){
+  document.getElementById('mlabel').textContent=`${curYear} 年度總覽`;
+  const wrap=document.getElementById('year-view');
+  const months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const visEvs=events.filter(e=>activeFilter.has(e.cat)||activeFilter.has(e.subcat||''));
+  // Group by effective category label
+  const evByTitle={};
+  visEvs.forEach(e=>{
+    const key=e.title;
+    if(!evByTitle[key])evByTitle[key]=[];
+    evByTitle[key].push(e);
   });
+  let html=`<div class="year-grid">`;
+  html+=`<div class="yg-header" style="position:sticky;left:0;z-index:3;background:var(--surface)">事件</div>`;
+  months.forEach(m=>html+=`<div class="yg-header">${m}</div>`);
+  Object.entries(evByTitle).forEach(([title,evs])=>{
+    html+=`<div class="yg-label" onclick="openSearch('${title.replace(/'/g,"\\'")}')">
+      <span style="font-size:10px;color:var(--text3)">${evs.length}筆</span> ${title}</div>`;
+    for(let m=0;m<12;m++){
+      const mStr=String(m+1).padStart(2,'0');
+      const mEvs=evs.filter(e=>{
+        const ds=(e.timeStart||e.dateStart||'').slice(0,7);
+        const de=(e.dateEnd||e.timeStart||e.dateStart||'').slice(0,7);
+        const myM=`${curYear}-${mStr}`;
+        return ds<=myM&&de>=myM;
+      });
+      html+=`<div class="yg-cell" onclick="openEvModal(null,'${curYear}-${mStr}-01')">`;
+      mEvs.forEach(ev=>{
+        const col=evColor(ev);
+        html+=`<div class="yg-dot" style="background:${col.bg}" title="${ev.title} (${(ev.timeStart||ev.dateStart||'').slice(0,10)})" onclick="event.stopPropagation();openEvModal('${ev.id}',null)"></div>`;
+      });
+      html+=`</div>`;
+    }
+  });
+  if(!Object.keys(evByTitle).length){
+    html+=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)">此年度尚無事件</div>`;
+  }
+  html+=`</div>`;
+  wrap.innerHTML=html;
+}
+
+// ══════════════════════════════════════════════
+// LIST VIEW
+// ══════════════════════════════════════════════
+function renderList(){
+  document.getElementById('mlabel').textContent=`${curYear} 清單`;
+  const wrap=document.getElementById('list-view');
+  const visEvs=events.filter(e=>activeFilter.has(e.cat)||activeFilter.has(e.subcat||''))
+    .sort((a,b)=>(a.timeStart||a.dateStart||'').localeCompare(b.timeStart||b.dateStart||''));
+  if(!visEvs.length){wrap.innerHTML=`<div style="text-align:center;color:var(--text3);padding:40px">目前無事件</div>`;return;}
+  const grp={};
+  visEvs.forEach(ev=>{const k=(ev.timeStart||ev.dateStart||'').slice(0,10);if(!grp[k])grp[k]=[];grp[k].push(ev);});
   let html='';
-  Object.keys(grouped).sort().forEach(date=>{
+  Object.keys(grp).sort().forEach(date=>{
     const d=new Date(date+'T00:00');
     const label=`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}（${'日一二三四五六'[d.getDay()]}）`;
-    html+=`<div class="list-date-group"><div class="list-date-label">${label}</div>`;
-    grouped[date].forEach(ev=>{
-      const cat=categories.find(c=>c.id===ev.cat)||{bg:'#888',name:'?'};
-      const time=ev.allday?'全天':ev.start.slice(11,16)+(ev.end?' – '+ev.end.slice(11,16):'');
-      const nb=ev.notif?`<span class="notif-badge">🔔 ${fmtNotifBefore(ev.notifBefore)}</span>`:'';
-      const rid=ev.recurId?`<span class="id-badge">↻ 週期</span>`:'';
-      html+=`<div class="list-ev" onclick="openEventModal('${ev.id}',null)">
-        <div class="color-bar" style="background:${cat.bg}"></div>
-        <div class="list-ev-body">
-          <div class="list-ev-title"><span class="id-badge">${ev.id}</span>${ev.title}${rid}</div>
-          <div class="list-ev-meta"><span>🕐 ${time}</span><span style="background:${cat.bg};color:${cat.text};padding:1px 6px;border-radius:8px;font-size:10px">${cat.name}</span>${nb}${ev.note?`<span>📝 ${ev.note}</span>`:''}</div>
+    html+=`<div class="ldg"><div class="ldg-label">${label}</div>`;
+    grp[date].forEach(ev=>{
+      const cat=getCat(ev.subcat||ev.cat);
+      const rc=getRootCat(ev.cat);
+      const time=ev.timeStart?ev.timeStart.slice(11,16)+(ev.timeEnd?' → '+ev.timeEnd.slice(11,16):''):(ev.dateStart?`${ev.dateStart}${ev.dateEnd&&ev.dateEnd!==ev.dateStart?' → '+ev.dateEnd:''}（全天）`:'');
+      const nb=ev.notif?`<span class="badge notif">🔔${fmtNotif(ev.notifBefore)}</span>`:'';
+      const rb=ev.recurId?`<span class="badge recur">↻週期</span>`:'';
+      const db=ev.done?`<span class="badge done-b">✓完成</span>`:'';
+      const sb=ev.subcat?`<span class="badge sub">${getCat(ev.subcat).name}</span>`:'';
+      html+=`<div class="lev${ev.done?' done':''}" onclick="openEvModal('${ev.id}',null)">
+        <div class="cbar" style="background:${cat.bg}"></div>
+        <div class="lev-body">
+          <div class="lev-title${ev.done?' done':''}">
+            <span class="badge id">${ev.id}</span>${ev.title}${rb}
+          </div>
+          <div class="lev-meta">
+            <span style="background:${rc.bg};color:${rc.text};padding:1px 7px;border-radius:8px;font-size:10px">${rc.name}</span>
+            ${sb}${nb}${db}
+            <span>🕐 ${time}</span>
+            ${ev.note?`<span title="${ev.note}">📝 ${ev.note.slice(0,20)}${ev.note.length>20?'…':''}</span>`:''}
+          </div>
         </div>
+        <div class="lev-chk"><div class="done-chk${ev.done?' on':''}" onclick="event.stopPropagation();toggleDone('${ev.id}')" title="標記完成">✓</div></div>
       </div>`;
     });
     html+=`</div>`;
   });
-  lv.innerHTML=html;
+  wrap.innerHTML=html;
 }
 
-// ─── Event helpers ────────────────────────────────────────
-function getVisibleEventsOnDate(dateStr){
-  return events.filter(ev=>{
-    if(!activeFilter.has(ev.cat)) return false;
-    if(ev.allday) return dateStr>=ev.start && dateStr<=(ev.end||ev.start);
-    return ev.start.startsWith(dateStr);
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+function visibleEventsOnDate(ds){
+  return events.filter(e=>{
+    if(!activeFilter.has(e.cat)&&!activeFilter.has(e.subcat||''))return false;
+    return evOnDate(e,ds);
   });
 }
-
-function fmtDate(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
-function fmtNotifBefore(min){
-  if(!min) return '準時';
-  if(min<60) return `${min}分鐘前`;
-  if(min<1440) return `${min/60}小時前`;
-  return `${min/1440}天前`;
+function toggleDone(id){
+  const ev=events.find(e=>e.id===id);if(ev)ev.done=!ev.done;
+  save();renderCurrent();buildSidebar();
 }
 
-// ─── Category ─────────────────────────────────────────────
-function buildCatFilter(){
-  const el=document.getElementById('cat-filter-list');
-  el.innerHTML='';
-  categories.forEach(cat=>{
-    const on=activeFilter.has(cat.id);
-    const cnt=events.filter(e=>e.cat===cat.id).length;
-    const div=document.createElement('div');
-    div.className='cat-item';
-    div.innerHTML=`<div class="cat-check ${on?'on':''}" style="${on?`background:${cat.bg}`:''}">✓</div><div class="cat-dot" style="background:${cat.bg}"></div><span class="cat-name">${cat.name}</span><span class="cat-count">${cnt}</span>`;
-    div.onclick=()=>{
-      if(on){if(activeFilter.size>1)activeFilter.delete(cat.id);}
-      else activeFilter.add(cat.id);
-      render();
-    };
-    el.appendChild(div);
-  });
+// ══════════════════════════════════════════════
+// CAT SELECTS
+// ══════════════════════════════════════════════
+function buildCatSelects(){
+  const psel=document.getElementById('ev-pcat');
+  psel.innerHTML=parentCats().map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  const npsel=document.getElementById('nc-parent');
+  npsel.innerHTML=`<option value="">— 設為母類別 —</option>`+parentCats().map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  onPCatChange();
 }
-
-function buildCatSelect(){
-  const sel=document.getElementById('ev-cat');
-  sel.innerHTML=categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-}
-
-function openCatModal(){
-  refreshCatModalList();
-  buildColorGrid();
-  document.getElementById('cat-overlay').classList.add('open');
-}
-function closeCatModal(){document.getElementById('cat-overlay').classList.remove('open');buildCatSelect();render();}
-
-function refreshCatModalList(){
-  const el=document.getElementById('cat-modal-list');
-  el.innerHTML='';
-  categories.forEach(cat=>{
-    const row=document.createElement('div');
-    row.className='cat-row';
-    row.innerHTML=`<div class="cat-row-dot" style="background:${cat.bg}"></div>
-      <span class="cat-row-name" style="color:${cat.bg}">${cat.name}</span>
-      <span style="font-size:11px;color:var(--text3)">${events.filter(e=>e.cat===cat.id).length} 個事件</span>
-      <button class="cat-row-del" onclick="deleteCat('${cat.id}')">刪除</button>`;
-    el.appendChild(row);
-  });
-}
-
-function buildColorGrid(){
-  const grid=document.getElementById('color-grid');
-  grid.innerHTML='';
-  PALETTE.forEach(col=>{
-    const sw=document.createElement('div');
-    sw.className='color-swatch'+(col===selectedColor?' sel':'');
-    sw.style.background=col;
-    sw.onclick=()=>{selectedColor=col;buildColorGrid();};
-    grid.appendChild(sw);
-  });
-}
-
-function addCategory(){
-  const name=document.getElementById('new-cat-name').value.trim();
-  if(!name){toast('請輸入類別名稱');return;}
-  const text=document.getElementById('new-cat-text').value;
-  const id='cat_'+Date.now();
-  categories.push({id,name,bg:selectedColor,text});
-  activeFilter.add(id);
-  document.getElementById('new-cat-name').value='';
-  save();refreshCatModalList();buildCatSelect();
-  toast('類別已新增：'+name);
-}
-
-function deleteCat(id){
-  if(events.some(e=>e.cat===id)){toast('此類別仍有事件，請先移除事件');return;}
-  categories=categories.filter(c=>c.id!==id);
-  activeFilter.delete(id);
-  save();refreshCatModalList();render();
-}
-
-// ─── Event Modal ──────────────────────────────────────────
-function openEventModal(evId, dateStr){
-  editEventId=evId;
-  const ev=evId?events.find(e=>e.id===evId):null;
-  document.getElementById('ev-modal-title').textContent=ev?'編輯事件':'新增事件';
-  document.getElementById('ev-del-btn').style.display=ev?'':'none';
-  document.getElementById('ev-del-series-btn').style.display=(ev&&ev.recurId)?'':'none';
-  document.getElementById('ev-title').value=ev?ev.title:'';
-  document.getElementById('ev-cat').value=ev?ev.cat:categories[0]?.id||'';
-  document.getElementById('ev-note').value=ev?ev.note:'';
-
-  const allday=ev?ev.allday:false;
-  document.getElementById('ev-allday').checked=allday;
-  toggleAllDay();
-
-  if(ev&&ev.allday){
-    document.getElementById('ev-d-start').value=ev.start;
-    document.getElementById('ev-d-end').value=ev.end||ev.start;
-  } else if(ev){
-    document.getElementById('ev-dt-start').value=ev.start;
-    document.getElementById('ev-dt-end').value=ev.end||ev.start;
-  } else if(dateStr){
-    document.getElementById('ev-dt-start').value=dateStr+'T09:00';
-    document.getElementById('ev-dt-end').value=dateStr+'T10:00';
-    document.getElementById('ev-d-start').value=dateStr;
-    document.getElementById('ev-d-end').value=dateStr;
-  }
-
-  const notif=ev?ev.notif:false;
-  const nt=document.getElementById('notif-toggle');
-  nt.className='toggle '+(notif?'on':'off');
-  document.getElementById('notif-opts').style.display=notif?'flex':'none';
-  document.getElementById('notif-before').value=ev?ev.notifBefore:15;
-
-  // Recurrence
-  const rec=ev&&ev.recurId?recurrences.find(r=>r.id===ev.recurId):null;
-  const rt=document.getElementById('recur-toggle');
-  rt.className='toggle '+(rec?'on':'off');
-  document.getElementById('recur-opts').style.display=rec?'block':'none';
-  if(rec){
-    document.getElementById('recur-interval').value=rec.interval;
-    document.getElementById('recur-unit').value=rec.unit;
-    document.getElementById('recur-holiday').value=rec.holiday;
-    document.getElementById('recur-until').value=rec.until||'';
-    document.getElementById('recur-count').value=rec.count||'';
-  } else {
-    document.getElementById('recur-interval').value=1;
-    document.getElementById('recur-unit').value='month';
-    document.getElementById('recur-holiday').value='keep';
-    document.getElementById('recur-until').value='';
-    document.getElementById('recur-count').value='';
-  }
-
-  // Auto ID
+function onPCatChange(){
+  const pid=document.getElementById('ev-pcat').value;
+  const subs=subCats(pid);
+  const ssel=document.getElementById('ev-scat');
+  ssel.innerHTML=`<option value="">— 無子類別 —</option>`+subs.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   updateAutoId();
-  document.getElementById('ev-overlay').classList.add('open');
-  document.getElementById('ac-list').className='ac-list';
 }
 
-function closeEventModal(){document.getElementById('ev-overlay').classList.remove('open');document.getElementById('ac-list').className='ac-list';}
-
-function toggleAllDay(){
-  const a=document.getElementById('ev-allday').checked;
-  document.getElementById('time-inputs').style.display=a?'none':'flex';
-  document.getElementById('date-inputs').style.display=a?'flex':'none';
-}
-function toggleNotif(btn){
-  const on=btn.classList.contains('off');
-  btn.className='toggle '+(on?'on':'off');
-  document.getElementById('notif-opts').style.display=on?'flex':'none';
-}
-function toggleRecur(btn){
-  const on=btn.classList.contains('off');
-  btn.className='toggle '+(on?'on':'off');
-  document.getElementById('recur-opts').style.display=on?'block':'none';
-}
-function onCatChange(){updateAutoId();}
-
+// ══════════════════════════════════════════════
+// AUTO ID
+// ══════════════════════════════════════════════
 function updateAutoId(){
-  if(editEventId) return document.getElementById('ev-id').value=editEventId;
-  const cat=document.getElementById('ev-cat').value;
-  const catObj=categories.find(c=>c.id===cat);
-  const prefix=catObj?catObj.name.toUpperCase().slice(0,4):cat.toUpperCase().slice(0,4);
+  if(editId)return document.getElementById('ev-id').value=editId;
+  const pid=document.getElementById('ev-pcat').value;
+  const sid=document.getElementById('ev-scat').value;
+  const cat=getCat(sid||pid);
+  const prefix=cat.name.slice(0,3).toUpperCase();
   const existing=events.filter(e=>e.id&&e.id.startsWith(prefix+'-'));
   const nums=existing.map(e=>parseInt(e.id.split('-').pop())||0);
   const next=(nums.length?Math.max(...nums):0)+1;
   document.getElementById('ev-id').value=`${prefix}-${String(next).padStart(3,'0')}`;
 }
 
-// ─── Autocomplete ─────────────────────────────────────────
-function onTitleInput(val){
-  acIndex=-1;
+// ══════════════════════════════════════════════
+// TIME TYPE
+// ══════════════════════════════════════════════
+function setTimeType(t){
+  document.getElementById('time-inputs').style.display=(t==='time'||t==='both')?'flex':'none';
+  document.getElementById('date-inputs').style.display=(t==='date'||t==='both')?'flex':'none';
+}
+
+// ══════════════════════════════════════════════
+// AUTOCOMPLETE
+// ══════════════════════════════════════════════
+function onACInput(val){
+  acIdx=-1;
   if(!val.trim()){document.getElementById('ac-list').className='ac-list';return;}
   const lower=val.toLowerCase();
-  const suggestions=buildSuggestions(lower);
+  const groups={};
+  events.forEach(ev=>{
+    if(!ev.title.toLowerCase().includes(lower))return;
+    if(!groups[ev.title])groups[ev.title]=[];
+    groups[ev.title].push(ev);
+  });
+  const sug=Object.entries(groups).map(([title,evs])=>{
+    evs.sort((a,b)=>(b.timeStart||b.dateStart||'').localeCompare(a.timeStart||a.dateStart||''));
+    const last=evs[0];const lastM=(last.timeStart||last.dateStart||'').slice(0,7);
+    const next=predictNext(evs);
+    return{title,badge:`上次${lastM}${next?` → 預測${next}`:''}`};
+  });
   const ac=document.getElementById('ac-list');
-  if(!suggestions.length){ac.className='ac-list';return;}
-  ac.innerHTML=suggestions.slice(0,6).map((s,i)=>`
-    <div class="ac-item" data-idx="${i}" onclick="pickSuggestion('${s.title.replace(/'/g,"\\'")}')">
-      <span>${s.title}</span>
-      <span class="ac-badge">${s.badge}</span>
-    </div>`).join('');
+  if(!sug.length){ac.className='ac-list';return;}
+  ac.innerHTML=sug.slice(0,6).map((s,i)=>`<div class="ac-item" data-i="${i}" onclick="pickAC('${s.title.replace(/'/g,"\\'")}')"><span>${s.title}</span><span class="ac-badge">${s.badge}</span></div>`).join('');
   ac.className='ac-list open';
 }
-
-function buildSuggestions(query){
-  const titleGroups={};
-  events.forEach(ev=>{
-    if(!ev.title.toLowerCase().includes(query)) return;
-    if(!titleGroups[ev.title]) titleGroups[ev.title]=[];
-    titleGroups[ev.title].push(ev);
-  });
-  return Object.entries(titleGroups).map(([title,evs])=>{
-    evs.sort((a,b)=>b.start.localeCompare(a.start));
-    const last=evs[0];
-    const lastDate=last.start.slice(0,7);
-    // Predict next period
-    const next=predictNext(evs,last);
-    return {title,badge:`上次 ${lastDate}${next?` → 預測 ${next}`:''}`};
-  });
-}
-
-function predictNext(evs,last){
-  if(evs.length<2) return null;
-  const sorted=evs.slice().sort((a,b)=>a.start.localeCompare(b.start));
+function predictNext(evs){
+  if(evs.length<2)return null;
+  const sorted=evs.slice().sort((a,b)=>(a.timeStart||a.dateStart||'').localeCompare(b.timeStart||b.dateStart||''));
   const diffs=[];
   for(let i=1;i<sorted.length;i++){
-    const a=new Date(sorted[i-1].start.slice(0,10));
-    const b=new Date(sorted[i].start.slice(0,10));
-    diffs.push(Math.round((b-a)/(86400000)));
+    const a=new Date((sorted[i-1].timeStart||sorted[i-1].dateStart||'').slice(0,10));
+    const b=new Date((sorted[i].timeStart||sorted[i].dateStart||'').slice(0,10));
+    diffs.push(Math.round((b-a)/86400000));
   }
   const avg=Math.round(diffs.reduce((a,b)=>a+b,0)/diffs.length);
-  const lastD=new Date(last.start.slice(0,10));
-  lastD.setDate(lastD.getDate()+avg);
-  return `${lastD.getFullYear()}/${lastD.getMonth()+1}`;
+  const last=new Date((evs[0].timeStart||evs[0].dateStart||'').slice(0,10));
+  last.setDate(last.getDate()+avg);
+  return`${last.getFullYear()}/${last.getMonth()+1}`;
 }
-
-function onTitleKey(e){
+function onACKey(e){
   const items=document.querySelectorAll('.ac-item');
-  if(e.key==='ArrowDown'){acIndex=Math.min(acIndex+1,items.length-1);highlightAc(items);}
-  else if(e.key==='ArrowUp'){acIndex=Math.max(acIndex-1,0);highlightAc(items);}
-  else if(e.key==='Enter'&&acIndex>=0){e.preventDefault();items[acIndex]?.click();}
-  else if(e.key==='Escape'){document.getElementById('ac-list').className='ac-list';}
+  if(e.key==='ArrowDown'){acIdx=Math.min(acIdx+1,items.length-1);hlAC(items);}
+  else if(e.key==='ArrowUp'){acIdx=Math.max(acIdx-1,0);hlAC(items);}
+  else if(e.key==='Enter'&&acIdx>=0){e.preventDefault();items[acIdx]?.click();}
+  else if(e.key==='Escape')document.getElementById('ac-list').className='ac-list';
 }
-function highlightAc(items){items.forEach((el,i)=>el.className='ac-item'+(i===acIndex?' sel':''));}
-function pickSuggestion(title){
-  document.getElementById('ev-title').value=title;
-  document.getElementById('ac-list').className='ac-list';
-  updateAutoId();
-}
+function hlAC(items){items.forEach((el,i)=>el.className='ac-item'+(i===acIdx?' sel':''));}
+function pickAC(title){document.getElementById('ev-title').value=title;document.getElementById('ac-list').className='ac-list';updateAutoId();}
 
-// ─── Save/Delete Event ────────────────────────────────────
+// ══════════════════════════════════════════════
+// EVENT MODAL
+// ══════════════════════════════════════════════
+function openEvModal(id,dateStr){
+  editId=id;
+  const ev=id?events.find(e=>e.id===id):null;
+  document.getElementById('ev-mtitle').textContent=ev?'編輯事件':'新增事件';
+  document.getElementById('ev-del').style.display=ev?'':'none';
+  document.getElementById('ev-del-series').style.display=(ev&&ev.recurId)?'':'none';
+  document.getElementById('ev-title').value=ev?.title||'';
+  document.getElementById('ev-note').value=ev?.note||'';
+
+  buildCatSelects();
+  if(ev){
+    document.getElementById('ev-pcat').value=ev.cat;
+    onPCatChange();
+    if(ev.subcat)document.getElementById('ev-scat').value=ev.subcat;
+    document.getElementById('ev-id').value=ev.id;
+  } else updateAutoId();
+
+  // done
+  const dt=document.getElementById('done-tog');
+  dt.className='tog '+(ev?.done?'on':'off');
+
+  // time type
+  const hasTime=ev?!!ev.timeStart:true;
+  const hasDate=ev?!!ev.dateStart:false;
+  const ttype=hasTime&&hasDate?'both':hasDate?'date':'time';
+  document.querySelector(`input[name=ttype][value=${ttype}]`).checked=true;
+  setTimeType(ttype);
+  if(ev){
+    if(ev.timeStart)document.getElementById('ev-ts').value=ev.timeStart;
+    if(ev.timeEnd)document.getElementById('ev-te').value=ev.timeEnd;
+    if(ev.dateStart)document.getElementById('ev-ds').value=ev.dateStart;
+    if(ev.dateEnd)document.getElementById('ev-de').value=ev.dateEnd;
+  } else if(dateStr){
+    document.getElementById('ev-ts').value=dateStr+'T09:00';
+    document.getElementById('ev-te').value=dateStr+'T10:00';
+    document.getElementById('ev-ds').value=dateStr;
+    document.getElementById('ev-de').value=dateStr;
+  }
+
+  // notif
+  const nt=document.getElementById('notif-tog');
+  nt.className='tog '+(ev?.notif?'on':'off');
+  document.getElementById('notif-opts').style.display=ev?.notif?'flex':'none';
+  document.getElementById('notif-before').value=ev?.notifBefore||15;
+
+  // recur
+  const rec=ev?.recurId?recurs.find(r=>r.id===ev.recurId):null;
+  const rt=document.getElementById('recur-tog');
+  rt.className='tog '+(rec?'on':'off');
+  document.getElementById('recur-panel').style.display=rec?'block':'none';
+  if(rec){document.getElementById('ri').value=rec.interval;document.getElementById('ru').value=rec.unit;document.getElementById('rh').value=rec.holiday;document.getElementById('ru2').value=rec.until||'';document.getElementById('rc').value=rec.count||'';}
+  else{document.getElementById('ri').value=1;document.getElementById('ru').value='month';document.getElementById('rh').value='keep';document.getElementById('ru2').value='';document.getElementById('rc').value='';}
+
+  document.getElementById('ev-overlay').classList.add('open');
+  document.getElementById('ac-list').className='ac-list';
+}
+function closeEvModal(){document.getElementById('ev-overlay').classList.remove('open');}
+
 function saveEvent(){
   const title=document.getElementById('ev-title').value.trim();
-  if(!title){toast('請填寫標題');return;}
-  const cat=document.getElementById('ev-cat').value;
-  const allday=document.getElementById('ev-allday').checked;
-  const notif=document.getElementById('notif-toggle').classList.contains('on');
-  const notifBefore=notif?parseInt(document.getElementById('notif-before').value):0;
+  if(!title)return toast('請填寫標題','err');
+  const cat=document.getElementById('ev-pcat').value;
+  const subcat=document.getElementById('ev-scat').value||null;
   const note=document.getElementById('ev-note').value;
-  const start=allday?document.getElementById('ev-d-start').value:document.getElementById('ev-dt-start').value;
-  const end=allday?document.getElementById('ev-d-end').value:document.getElementById('ev-dt-end').value;
-  if(!start){toast('請填寫開始時間');return;}
+  const done=document.getElementById('done-tog').classList.contains('on');
+  const notif=document.getElementById('notif-tog').classList.contains('on');
+  const notifBefore=notif?parseInt(document.getElementById('notif-before').value):0;
+  const ttype=document.querySelector('input[name=ttype]:checked').value;
+  const timeStart=(ttype==='time'||ttype==='both')?document.getElementById('ev-ts').value:null;
+  const timeEnd=(ttype==='time'||ttype==='both')?document.getElementById('ev-te').value:null;
+  const dateStart=(ttype==='date'||ttype==='both')?document.getElementById('ev-ds').value:null;
+  const dateEnd=(ttype==='date'||ttype==='both')?document.getElementById('ev-de').value:null;
+  if(!timeStart&&!dateStart)return toast('請填寫時間或日期','err');
 
-  const hasRecur=document.getElementById('recur-toggle').classList.contains('on');
+  const hasRecur=document.getElementById('recur-tog').classList.contains('on');
   let recurId=null;
-
   if(hasRecur){
-    const interval=parseInt(document.getElementById('recur-interval').value)||1;
-    const unit=document.getElementById('recur-unit').value;
-    const holiday=document.getElementById('recur-holiday').value;
-    const until=document.getElementById('recur-until').value||null;
-    const countVal=document.getElementById('recur-count').value;
-    const count=countVal?parseInt(countVal):null;
-
-    if(editEventId){
-      const oldEv=events.find(e=>e.id===editEventId);
-      recurId=oldEv?.recurId||'REC-'+Date.now();
-    } else {
-      recurId='REC-'+Date.now();
-    }
-    const existing=recurrences.find(r=>r.id===recurId);
-    if(existing) Object.assign(existing,{interval,unit,holiday,until,count,baseTitle:title,cat});
-    else recurrences.push({id:recurId,baseTitle:title,cat,interval,unit,holiday,until,count});
-
-    // Generate future instances
-    generateRecurInstances(recurId,title,cat,start,allday,notif,notifBefore,note,interval,unit,holiday,until,count);
+    const interval=parseInt(document.getElementById('ri').value)||1;
+    const unit=document.getElementById('ru').value;
+    const holiday=document.getElementById('rh').value;
+    const until=document.getElementById('ru2').value||null;
+    const count=document.getElementById('rc').value?parseInt(document.getElementById('rc').value):null;
+    recurId=editId?(events.find(e=>e.id===editId)?.recurId||'REC-'+Date.now()):'REC-'+Date.now();
+    const existing=recurs.find(r=>r.id===recurId);
+    if(existing)Object.assign(existing,{interval,unit,holiday,until,count,baseTitle:title,cat,subcat});
+    else recurs.push({id:recurId,baseTitle:title,cat,subcat,interval,unit,holiday,until,count});
+    genRecur(recurId,title,cat,subcat,timeStart,dateStart,notif,notifBefore,note,interval,unit,holiday,until,count);
   }
 
   const newId=document.getElementById('ev-id').value||('EV-'+Date.now());
-  const ev={id:newId,title,cat,allday,start,end:end||start,notif,notifBefore,note,recurId};
-
-  if(editEventId){
-    const idx=events.findIndex(e=>e.id===editEventId);
-    if(idx>=0) events[idx]=ev;
-  } else {
-    events.push(ev);
-  }
-  save();closeEventModal();render();
-  toast(editEventId?'事件已更新':'事件已新增：'+title);
+  const ev={id:newId,title,cat,subcat,done,timeStart:timeStart||null,timeEnd:timeEnd||null,dateStart:dateStart||null,dateEnd:dateEnd||null,notif,notifBefore,note,recurId};
+  if(editId){const idx=events.findIndex(e=>e.id===editId);if(idx>=0)events[idx]=ev;}
+  else events.push(ev);
+  save();closeEvModal();buildSidebar();renderCurrent();
+  toast(editId?'事件已更新':'事件已新增：'+title,'ok');
 }
 
-function generateRecurInstances(recurId,title,cat,baseStart,allday,notif,notifBefore,note,interval,unit,holiday,until,count){
-  // Remove future generated events for this series (keep existing edits)
-  events=events.filter(e=>e.recurId!==recurId||e.id===editEventId);
-  const base=new Date(baseStart.slice(0,10));
-  const stop=until?new Date(until):new Date(base.getFullYear()+3,base.getMonth(),base.getDate());
-  const max=count||60;
-  let current=new Date(base);
-  let gen=0;
-  const catObj=categories.find(c=>c.id===cat)||{name:'EV'};
-  const prefix=catObj.name.toUpperCase().slice(0,4);
+function delEvent(){
+  if(!confirm('確定刪除此事件？'))return;
+  events=events.filter(e=>e.id!==editId);
+  save();closeEvModal();buildSidebar();renderCurrent();toast('已刪除','ok');
+}
+function delSeries(){
+  const ev=events.find(e=>e.id===editId);
+  if(!ev?.recurId||!confirm('確定刪除整個週期系列？'))return;
+  const rid=ev.recurId;
+  events=events.filter(e=>e.recurId!==rid);
+  recurs=recurs.filter(r=>r.id!==rid);
+  save();closeEvModal();buildSidebar();renderCurrent();toast('系列已刪除','ok');
+}
 
-  while(current<=stop && gen<max){
-    addUnit(current,interval,unit);
-    if(current>stop) break;
-    let adjusted=new Date(current);
-    if(holiday!=='keep'){
-      const dow=adjusted.getDay();
-      if(dow===0){adjusted.setDate(adjusted.getDate()+(holiday==='after'?1:-2));}
-      if(dow===6){adjusted.setDate(adjusted.getDate()+(holiday==='after'?2:-1));}
-    }
-    const ds=adjusted.toISOString().slice(0,10);
-    // Check if this date already has a manual event from this series
-    if(!events.some(e=>e.recurId===recurId&&e.start===ds)){
-      const existing=events.filter(e=>e.id&&e.id.startsWith(prefix+'-'));
+// ══════════════════════════════════════════════
+// RECURRENCE
+// ══════════════════════════════════════════════
+function genRecur(recurId,title,cat,subcat,timeStart,dateStart,notif,notifBefore,note,interval,unit,holiday,until,count){
+  events=events.filter(e=>e.recurId!==recurId||e.id===editId);
+  const baseStr=dateStart||timeStart.slice(0,10);
+  const base=new Date(baseStr);
+  const stop=until?new Date(until):new Date(base.getFullYear()+3,base.getMonth(),base.getDate());
+  const max=count||60;let cur=new Date(base);let gen=0;
+  const cat2=getCat(subcat||cat);
+  const prefix=cat2.name.slice(0,3).toUpperCase();
+  while(gen<max){
+    addUnit(cur,interval,unit);if(cur>stop)break;
+    let adj=new Date(cur);
+    if(holiday!=='keep'){const dow=adj.getDay();if(dow===0)adj.setDate(adj.getDate()+(holiday==='after'?1:-2));if(dow===6)adj.setDate(adj.getDate()+(holiday==='after'?2:-1));}
+    const ds=adj.toISOString().slice(0,10);
+    if(!events.some(e=>e.recurId===recurId&&(e.dateStart===ds||e.timeStart?.startsWith(ds)))){
+      const existing=events.filter(e=>e.id?.startsWith(prefix+'-'));
       const nums=existing.map(e=>parseInt(e.id.split('-').pop())||0);
-      const nextNum=(nums.length?Math.max(...nums):0)+1;
-      const newId=`${prefix}-${String(nextNum).padStart(3,'0')}`;
-      events.push({id:newId,title,cat,allday,start:ds,end:ds,notif,notifBefore,note,recurId});
+      const next=(nums.length?Math.max(...nums):0)+1;
+      const newId=`${prefix}-${String(next).padStart(3,'0')}`;
+      const newTs=timeStart?ds+timeStart.slice(10):null;
+      events.push({id:newId,title,cat,subcat,done:false,timeStart:newTs,timeEnd:null,dateStart:dateStart?ds:null,dateEnd:dateStart?ds:null,notif,notifBefore,note,recurId});
     }
     gen++;
   }
 }
-
 function addUnit(d,n,unit){
-  if(unit==='day') d.setDate(d.getDate()+n);
-  else if(unit==='week') d.setDate(d.getDate()+n*7);
-  else if(unit==='month') d.setMonth(d.getMonth()+n);
-  else if(unit==='year') d.setFullYear(d.getFullYear()+n);
+  if(unit==='day')d.setDate(d.getDate()+n);
+  else if(unit==='week')d.setDate(d.getDate()+n*7);
+  else if(unit==='month')d.setMonth(d.getMonth()+n);
+  else d.setFullYear(d.getFullYear()+n);
 }
 
-function deleteEvent(){
-  if(!confirm('確定刪除此事件？')) return;
-  events=events.filter(e=>e.id!==editEventId);
-  save();closeEventModal();render();toast('事件已刪除');
-}
-function deleteEventSeries(){
-  const ev=events.find(e=>e.id===editEventId);
-  if(!ev?.recurId||!confirm('確定刪除整個週期系列？')) return;
-  const rid=ev.recurId;
-  events=events.filter(e=>e.recurId!==rid);
-  recurrences=recurrences.filter(r=>r.id!==rid);
-  save();closeEventModal();render();toast('週期系列已刪除');
-}
-
-// ─── Notifications ────────────────────────────────────────
-function requestNotifPermission(){
-  if('Notification' in window && Notification.permission==='default') Notification.requestPermission();
-}
-
-function checkNotifications(){
-  const now=new Date();
-  events.filter(ev=>ev.notif).forEach(ev=>{
-    const evTime=new Date(ev.start);
-    if(isNaN(evTime)) return;
-    const diff=(evTime-now)/60000;
-    if(diff>=0 && diff<=ev.notifBefore+1 && diff>=ev.notifBefore-1){
-      sendNotif(ev);
-    }
+// ══════════════════════════════════════════════
+// CATEGORY MANAGER
+// ══════════════════════════════════════════════
+function buildNcColors(){buildColorGrid('nc-colors',ncColor,c=>{ncColor=c;buildNcColors();});buildColorGrid('ec-colors',ecColor,c=>{ecColor=c;buildColorGrid('ec-colors',ecColor,c=>{ecColor=c;});});}
+function buildColorGrid(elId,sel,onPick){
+  const el=document.getElementById(elId);if(!el)return;
+  el.innerHTML='';
+  PALETTE.forEach(col=>{
+    const sw=document.createElement('div');
+    sw.className='cswatch'+(col===sel?' sel':'');
+    sw.style.background=col;
+    sw.onclick=()=>onPick(col);
+    el.appendChild(sw);
   });
 }
-
-function sendNotif(ev){
-  const msg=`📅 ${ev.title}${ev.notifBefore?` (${fmtNotifBefore(ev.notifBefore)})`:' 現在開始'}`;
-  if('Notification' in window && Notification.permission==='granted'){
-    new Notification('行事曆提醒',{body:msg});
-  }
-  toast('🔔 '+msg,'notif');
+function openCatMgr(){refreshCatMgrList();buildCatSelects();buildNcColors();document.getElementById('cat-overlay').classList.add('open');}
+function closeCatMgr(){document.getElementById('cat-overlay').classList.remove('open');buildSidebar();buildCatSelects();renderCurrent();}
+function refreshCatMgrList(){
+  const el=document.getElementById('catmgr-list');el.innerHTML='';
+  parentCats().forEach(pc=>{
+    el.appendChild(makeCatMgrRow(pc,false));
+    subCats(pc.id).forEach(sc=>el.appendChild(makeCatMgrRow(sc,true)));
+  });
+}
+function makeCatMgrRow(cat,isSub){
+  const div=document.createElement('div');div.className='catmgr-row'+(isSub?' sub':'');
+  div.innerHTML=`<div class="catmgr-dot" style="background:${cat.bg}"></div>
+    <span class="catmgr-name" style="color:${cat.bg}">${cat.name}</span>
+    ${cat.parentId?`<span style="font-size:10px;color:var(--text3)">子</span>`:''}
+    <span style="font-size:10px;color:var(--text3)">${events.filter(e=>e.cat===cat.id||e.subcat===cat.id).length}筆</span>
+    <button class="catmgr-btn" onclick="openEditCat('${cat.id}')">✏ 編輯</button>
+    <button class="catmgr-btn del" onclick="delCat('${cat.id}')">✕ 刪除</button>`;
+  return div;
+}
+function addCat(){
+  const name=document.getElementById('nc-name').value.trim();
+  if(!name)return toast('請輸入名稱','err');
+  const parentId=document.getElementById('nc-parent').value||null;
+  const text=document.getElementById('nc-text').value;
+  const order=parentId?subCats(parentId).length:parentCats().length;
+  const id='cat_'+Date.now();
+  cats.push({id,name,bg:ncColor,text,parentId,order});
+  activeFilter.add(id);
+  document.getElementById('nc-name').value='';
+  save();refreshCatMgrList();buildCatSelects();buildSidebar();toast('類別已新增','ok');
+}
+function delCat(id){
+  if(events.some(e=>e.cat===id||e.subcat===id))return toast('此類別有事件，請先移除','err');
+  if(subCats(id).length)return toast('請先刪除子類別','err');
+  cats=cats.filter(c=>c.id!==id);activeFilter.delete(id);
+  save();refreshCatMgrList();buildSidebar();
+}
+function openEditCat(id){
+  editCatId=id;const cat=getCat(id);
+  document.getElementById('ec-name').value=cat.name;
+  document.getElementById('ec-text').value=cat.text||'#ffffff';
+  ecColor=cat.bg;buildColorGrid('ec-colors',ecColor,c=>{ecColor=c;buildColorGrid('ec-colors',ecColor,c=>{ecColor=c;});});
+  closeEditCat_noclose=true;
+  document.getElementById('editcat-overlay').classList.add('open');
+}
+function closeEditCat(){document.getElementById('editcat-overlay').classList.remove('open');editCatId=null;}
+function saveEditCat(){
+  const cat=cats.find(c=>c.id===editCatId);if(!cat)return;
+  cat.name=document.getElementById('ec-name').value.trim()||cat.name;
+  cat.bg=ecColor;cat.text=document.getElementById('ec-text').value;
+  save();closeEditCat();refreshCatMgrList();buildSidebar();buildCatSelects();renderCurrent();toast('類別已更新','ok');
 }
 
-// ─── Export ───────────────────────────────────────────────
-function openExportModal(){document.getElementById('export-overlay').classList.add('open');}
-function closeExportModal(){document.getElementById('export-overlay').classList.remove('open');}
+// ══════════════════════════════════════════════
+// SEARCH
+// ══════════════════════════════════════════════
+function onSearch(val){
+  const res=document.getElementById('search-results');
+  if(!val.trim()){res.className='search-results';return;}
+  const lower=val.toLowerCase();
+  const found=events.filter(e=>e.title.toLowerCase().includes(lower)||(e.note||'').toLowerCase().includes(lower)).slice(0,20);
+  if(!found.length){res.innerHTML=`<div style="padding:12px;color:var(--text3);font-size:13px">無結果</div>`;res.className='search-results open';return;}
+  res.innerHTML=found.map(ev=>{
+    const col=evColor(ev);const ds=(ev.timeStart||ev.dateStart||'').slice(0,10);
+    return`<div class="sr-item" onclick="openEvModal('${ev.id}',null);document.getElementById('search-results').className='search-results'">
+      <div class="sr-dot" style="background:${col.bg}"></div>
+      <div><div class="sr-title">${ev.title}</div><div class="sr-meta">${ds} ‧ ${getCat(ev.subcat||ev.cat).name}</div></div>
+      <button class="sr-del" onclick="event.stopPropagation();delSearchResult('${ev.id}')">刪除</button>
+    </div>`;
+  }).join('');
+  res.className='search-results open';
+}
+function onSearchKey(e){if(e.key==='Escape')document.getElementById('search-results').className='search-results';}
+function delSearchResult(id){
+  if(!confirm('確定刪除此事件？'))return;
+  events=events.filter(e=>e.id!==id);save();buildSidebar();renderCurrent();
+  onSearch(document.getElementById('search-input').value);toast('已刪除','ok');
+}
+function openSearch(q){document.getElementById('search-input').value=q;onSearch(q);}
+document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('search-results').className='search-results';if(!e.target.closest('.ac-wrap'))document.getElementById('ac-list').className='ac-list';});
 
+// ══════════════════════════════════════════════
+// NOTIFICATIONS
+// ══════════════════════════════════════════════
+function requestNotifPerm(){if('Notification'in window&&Notification.permission==='default')Notification.requestPermission();}
+function checkNotifs(){
+  const now=new Date();
+  events.filter(ev=>ev.notif&&!ev.done).forEach(ev=>{
+    const t=new Date(ev.timeStart||ev.dateStart||'');
+    if(isNaN(t))return;
+    const diff=(t-now)/60000;
+    if(diff>=0&&Math.abs(diff-ev.notifBefore)<1)sendNotif(ev);
+  });
+}
+function checkNotifsManual(){
+  const soon=new Date(Date.now()+2*60000);
+  const ev=events.filter(ev=>ev.notif&&!ev.done).find(ev=>{
+    const t=new Date(ev.timeStart||ev.dateStart||'');return!isNaN(t)&&t>new Date()&&t<soon;
+  });
+  if(ev)sendNotif(ev);else toast('找不到2分鐘內的通知事件，請新增一個測試用事件（時間設為現在+2分鐘，開啟通知）');
+}
+function sendNotif(ev){
+  const msg=`📅 ${ev.title} ${ev.notifBefore?fmtNotif(ev.notifBefore)+'提醒':'現在開始'}`;
+  if('Notification'in window&&Notification.permission==='granted')new Notification('行事曆提醒',{body:msg});
+  toast('🔔 '+msg,'ok');
+}
+
+// ══════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════
+function openExport(){document.getElementById('export-overlay').classList.add('open');}
+function closeExport(){document.getElementById('export-overlay').classList.remove('open');}
 function doExport(){
-  const fmt=document.getElementById('export-fmt').value;
-  const from=document.getElementById('export-from').value;
-  const to=document.getElementById('export-to').value;
+  const fmt=document.getElementById('exp-fmt').value;
+  const from=document.getElementById('exp-from').value;
+  const to=document.getElementById('exp-to').value;
   let data=events;
-  if(from) data=data.filter(e=>e.start>=from);
-  if(to) data=data.filter(e=>e.start<=to+'T23:59');
-
-  if(fmt==='json'){
-    const out=JSON.stringify({events:data,categories,recurrences},null,2);
-    dl(out,'calendar.json','application/json');
-  } else if(fmt==='csv'){
-    const hdr='ID,標題,類別,全天,開始,結束,通知,通知時間(分),備註,週期ID\n';
-    const rows=data.map(e=>[e.id,q(e.title),e.cat,e.allday,e.start,e.end||'',e.notif,e.notifBefore,q(e.note||''),e.recurId||''].join(',')).join('\n');
-    dl('\uFEFF'+hdr+rows,'calendar.csv','text/csv');
-  } else if(fmt==='ics'){
-    let ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//CalSystem//EN\r\n';
+  if(from)data=data.filter(e=>(e.timeStart||e.dateStart||'')>=from);
+  if(to)data=data.filter(e=>(e.timeStart||e.dateStart||'')<=to+'T23:59');
+  if(fmt==='json'){dl(JSON.stringify({events:data,cats,recurs},null,2),'calendar.json','application/json');}
+  else if(fmt==='csv'){
+    const hdr='\uFEFFID,標題,母類別,子類別,時間開始,時間結束,日期開始,日期結束,通知,通知(分),完成,備註,週期ID\n';
+    const rows=data.map(e=>[e.id,q(e.title),e.cat,e.subcat||'',e.timeStart||'',e.timeEnd||'',e.dateStart||'',e.dateEnd||'',e.notif,e.notifBefore,e.done,q(e.note||''),e.recurId||''].join(',')).join('\n');
+    dl(hdr+rows,'calendar.csv','text/csv');
+  } else {
+    let ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//CalSys//EN\r\n';
     data.forEach(ev=>{
-      ics+='BEGIN:VEVENT\r\n';
-      ics+=`UID:${ev.id}@calsys\r\n`;
-      ics+=`SUMMARY:${ev.title}\r\n`;
-      if(ev.allday){
-        ics+=`DTSTART;VALUE=DATE:${ev.start.replace(/-/g,'')}\r\n`;
-        const end=ev.end?ev.end:ev.start;
-        const endD=new Date(end+'T00:00');endD.setDate(endD.getDate()+1);
-        ics+=`DTEND;VALUE=DATE:${endD.toISOString().slice(0,10).replace(/-/g,'')}\r\n`;
-      } else {
-        ics+=`DTSTART:${ev.start.replace(/[-:]/g,'').replace('T','T')}00\r\n`;
-        if(ev.end) ics+=`DTEND:${ev.end.replace(/[-:]/g,'').replace('T','T')}00\r\n`;
-      }
-      if(ev.note) ics+=`DESCRIPTION:${ev.note}\r\n`;
-      if(ev.notif&&!ev.allday) ics+=`BEGIN:VALARM\r\nTRIGGER:-PT${ev.notifBefore}M\r\nACTION:DISPLAY\r\nDESCRIPTION:${ev.title}\r\nEND:VALARM\r\n`;
+      ics+='BEGIN:VEVENT\r\n';ics+=`UID:${ev.id}@calsys\r\nSUMMARY:${ev.title}\r\n`;
+      if(ev.dateStart&&!ev.timeStart){ics+=`DTSTART;VALUE=DATE:${ev.dateStart.replace(/-/g,'')}\r\n`;const e=ev.dateEnd||ev.dateStart;const ed=new Date(e+'T00:00');ed.setDate(ed.getDate()+1);ics+=`DTEND;VALUE=DATE:${ed.toISOString().slice(0,10).replace(/-/g,'')}\r\n`;}
+      else if(ev.timeStart){ics+=`DTSTART:${ev.timeStart.replace(/[-:]/g,'').replace('T','T')}00\r\n`;if(ev.timeEnd)ics+=`DTEND:${ev.timeEnd.replace(/[-:]/g,'').replace('T','T')}00\r\n`;}
+      if(ev.note)ics+=`DESCRIPTION:${ev.note}\r\n`;
+      if(ev.notif&&ev.timeStart)ics+=`BEGIN:VALARM\r\nTRIGGER:-PT${ev.notifBefore}M\r\nACTION:DISPLAY\r\nDESCRIPTION:${ev.title}\r\nEND:VALARM\r\n`;
       ics+='END:VEVENT\r\n';
     });
     ics+='END:VCALENDAR';
     dl(ics,'calendar.ics','text/calendar');
   }
-  closeExportModal();toast('匯出完成');
+  closeExport();toast('匯出完成','ok');
 }
 
-function q(s){return '"'+String(s).replace(/"/g,'""')+'"';}
-function dl(content,name,type){
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([content],{type}));
-  a.download=name;a.click();
-}
-
-// ─── Import ───────────────────────────────────────────────
-function openImportModal(){document.getElementById('import-overlay').classList.add('open');}
-function closeImportModal(){document.getElementById('import-overlay').classList.remove('open');importData=null;document.getElementById('import-preview').innerHTML='';document.getElementById('import-btn').style.display='none';}
-function onDragOver(e){e.preventDefault();document.getElementById('file-drop').classList.add('drag');}
-function onDrop(e){e.preventDefault();document.getElementById('file-drop').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)readFile(f);}
-function onFileSelect(e){if(e.target.files[0])readFile(e.target.files[0]);}
-
-function readFile(file){
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const text=e.target.result;
-    const ext=file.name.split('.').pop().toLowerCase();
+// ══════════════════════════════════════════════
+// IMPORT
+// ══════════════════════════════════════════════
+function openImport(){document.getElementById('import-overlay').classList.add('open');}
+function closeImport(){document.getElementById('import-overlay').classList.remove('open');impData=null;document.getElementById('imp-preview').innerHTML='';document.getElementById('imp-btn').style.display='none';}
+function onImpDrop(e){e.preventDefault();const f=e.dataTransfer.files[0];if(f)readImpFile(f);}
+function onImpFile(e){if(e.target.files[0])readImpFile(e.target.files[0]);}
+function readImpFile(file){
+  const r=new FileReader();r.onload=e=>{
+    const text=e.target.result;const ext=file.name.split('.').pop().toLowerCase();
     try{
-      if(ext==='json') importData=parseJSON(text);
-      else if(ext==='csv') importData=parseCSV(text);
-      else if(ext==='ics') importData=parseICS(text);
-      else{toast('不支援的格式');return;}
-      showImportPreview(importData,ext);
-    }catch(err){toast('解析失敗：'+err.message);}
-  };
-  reader.readAsText(file,'utf-8');
+      if(ext==='json')impData=JSON.parse(text);
+      else if(ext==='csv')impData={events:parseCSV(text),cats:[],recurs:[]};
+      else if(ext==='ics')impData={events:parseICS(text),cats:[],recurs:[]};
+      else return toast('不支援格式','err');
+      document.getElementById('imp-preview').innerHTML=`<div style="background:var(--bg);border-radius:6px;padding:8px 10px;font-size:12px">✅ 解析成功：<b>${impData.events?.length||0}</b> 筆事件${impData.cats?.length?`、<b>${impData.cats.length}</b> 個類別`:''}</div>`;
+      document.getElementById('imp-btn').style.display='';
+    }catch(err){toast('解析失敗：'+err.message,'err');}
+  };r.readAsText(file,'utf-8');
 }
-
-function parseJSON(text){const p=JSON.parse(text);return{events:p.events||[],categories:p.categories||[],recurrences:p.recurrences||[]};}
 function parseCSV(text){
   const lines=text.replace(/^\uFEFF/,'').split('\n').slice(1).filter(l=>l.trim());
-  const evs=lines.map(line=>{
+  return lines.map(line=>{
     const cols=[];let buf='',inq=false;
-    for(const c of line){if(c==='"'){inq=!inq;}else if(c===','&&!inq){cols.push(buf);buf='';}else buf+=c;}
-    cols.push(buf);
-    return{id:cols[0]||'',title:cols[1]||'',cat:cols[2]||'',allday:cols[3]==='true',start:cols[4]||'',end:cols[5]||'',notif:cols[6]==='true',notifBefore:parseInt(cols[7])||0,note:cols[8]||'',recurId:cols[9]||null};
+    for(const c of line){if(c==='"'){inq=!inq;}else if(c===','&&!inq){cols.push(buf);buf='';}else buf+=c;}cols.push(buf);
+    return{id:cols[0]||'IMP-'+Date.now(),title:cols[1]||'',cat:cols[2]||cats[0]?.id||'',subcat:cols[3]||null,timeStart:cols[4]||null,timeEnd:cols[5]||null,dateStart:cols[6]||null,dateEnd:cols[7]||null,notif:cols[8]==='true',notifBefore:parseInt(cols[9])||0,done:cols[10]==='true',note:cols[11]||'',recurId:cols[12]||null};
   });
-  return{events:evs,categories:[],recurrences:[]};
 }
 function parseICS(text){
   const evs=[];let cur=null;
   text.split(/\r?\n/).forEach(line=>{
     if(line==='BEGIN:VEVENT'){cur={};}
-    else if(line==='END:VEVENT'&&cur){
-      if(cur.start) evs.push({id:cur.uid||'EV-'+Date.now(),title:cur.title||'',cat:'task',allday:cur.allday,start:cur.start,end:cur.end||cur.start,notif:false,notifBefore:0,note:cur.note||'',recurId:null});
-      cur=null;
-    } else if(cur){
-      if(line.startsWith('SUMMARY:')) cur.title=line.slice(8);
-      else if(line.startsWith('UID:')) cur.uid=line.slice(4);
-      else if(line.startsWith('DESCRIPTION:')) cur.note=line.slice(12);
-      else if(line.startsWith('DTSTART;VALUE=DATE:')){cur.start=line.slice(19).replace(/(\d{4})(\d{2})(\d{2})/,'$1-$2-$3');cur.allday=true;}
-      else if(line.startsWith('DTSTART:')){cur.start=line.slice(8,23).replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/,'$1-$2-$3T$4:$5');cur.allday=false;}
-      else if(line.startsWith('DTEND;VALUE=DATE:')){cur.end=line.slice(17).replace(/(\d{4})(\d{2})(\d{2})/,'$1-$2-$3');}
-      else if(line.startsWith('DTEND:')){cur.end=line.slice(6,21).replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/,'$1-$2-$3T$4:$5');}
+    else if(line==='END:VEVENT'&&cur){if(cur.timeStart||cur.dateStart)evs.push({id:cur.uid||'ICS-'+Date.now(),title:cur.title||'',cat:cats[0]?.id||'',subcat:null,done:false,timeStart:cur.timeStart||null,timeEnd:null,dateStart:cur.dateStart||null,dateEnd:cur.dateEnd||null,notif:false,notifBefore:0,note:cur.note||'',recurId:null});cur=null;}
+    else if(cur){
+      if(line.startsWith('SUMMARY:'))cur.title=line.slice(8);
+      else if(line.startsWith('UID:'))cur.uid=line.slice(4);
+      else if(line.startsWith('DESCRIPTION:'))cur.note=line.slice(12);
+      else if(line.startsWith('DTSTART;VALUE=DATE:'))cur.dateStart=line.slice(19).replace(/(\d{4})(\d{2})(\d{2})/,'$1-$2-$3');
+      else if(line.startsWith('DTSTART:'))cur.timeStart=line.slice(8,23).replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/,'$1-$2-$3T$4:$5');
+      else if(line.startsWith('DTEND;VALUE=DATE:'))cur.dateEnd=line.slice(17).replace(/(\d{4})(\d{2})(\d{2})/,'$1-$2-$3');
     }
   });
-  return{events:evs,categories:[],recurrences:[]};
+  return evs;
 }
-
-function showImportPreview(data,ext){
-  const el=document.getElementById('import-preview');
-  el.innerHTML=`<div style="background:var(--bg);border-radius:var(--radius);padding:10px 12px;font-size:12px">
-    <div style="font-weight:600;margin-bottom:4px">✅ 解析成功</div>
-    <div>格式：${ext.toUpperCase()} | 事件：${data.events.length} 筆${data.categories.length?` | 類別：${data.categories.length} 個`:''}${data.recurrences.length?` | 週期：${data.recurrences.length} 個`:''}</div>
-    <div style="color:var(--text3);margin-top:3px">匯入將合併到現有資料，相同 ID 的事件會被覆蓋</div>
-  </div>`;
-  document.getElementById('import-btn').style.display='';
-}
-
 function doImport(){
-  if(!importData) return;
-  // Merge categories
-  importData.categories.forEach(c=>{
-    if(!categories.find(x=>x.id===c.id)) categories.push(c);
-  });
-  // Merge recurrences
-  importData.recurrences.forEach(r=>{
-    const idx=recurrences.findIndex(x=>x.id===r.id);
-    if(idx>=0) recurrences[idx]=r; else recurrences.push(r);
-  });
-  // Merge events
-  importData.events.forEach(ev=>{
-    const idx=events.findIndex(e=>e.id===ev.id);
-    if(idx>=0) events[idx]=ev; else events.push(ev);
-  });
-  activeFilter=new Set(categories.map(c=>c.id));
-  save();closeImportModal();render();buildCatSelect();
-  toast(`匯入完成，共 ${importData.events.length} 筆事件`);
+  if(!impData)return;
+  (impData.cats||[]).forEach(c=>{if(!cats.find(x=>x.id===c.id)){cats.push(c);activeFilter.add(c.id);}});
+  (impData.recurs||[]).forEach(r=>{const i=recurs.findIndex(x=>x.id===r.id);if(i>=0)recurs[i]=r;else recurs.push(r);});
+  (impData.events||[]).forEach(e=>{const i=events.findIndex(x=>x.id===e.id);if(i>=0)events[i]=e;else events.push(e);});
+  save();closeImport();buildSidebar();buildCatSelects();renderCurrent();toast(`匯入完成，${impData.events?.length||0} 筆事件`,'ok');
 }
 
-// ─── Toast ────────────────────────────────────────────────
-function toast(msg,cls=''){
-  const container=document.getElementById('toast-container');
-  const t=document.createElement('div');
-  t.className='toast'+(cls?' '+cls:'');
-  t.textContent=msg;
-  container.appendChild(t);
-  setTimeout(()=>t.remove(),3500);
+// ══════════════════════════════════════════════
+// EXCEL IMPORT
+// ══════════════════════════════════════════════
+function openExcelImport(){
+  document.getElementById('excel-overlay').classList.add('open');
+  document.getElementById('excel-body').innerHTML='';
+  addExcelRow();addExcelRow();addExcelRow();
+}
+function closeExcelImport(){document.getElementById('excel-overlay').classList.remove('open');}
+function addExcelRow(){
+  const tbody=document.getElementById('excel-body');
+  const n=tbody.rows.length+1;
+  const catOpts=parentCats().map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  const subOpts=`<option value="">—</option>`+cats.filter(c=>c.parentId).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td style="color:var(--text3);font-size:11px;padding:4px 6px">${n}</td>
+    <td><input type="text" placeholder="2026-07-05 或 2026-07-05T09:00"></td>
+    <td><input type="text" placeholder="結束（選填）"></td>
+    <td><select>${catOpts}</select></td>
+    <td><select>${subOpts}</select></td>
+    <td><input type="text" placeholder="事件名稱"></td>
+    <td><input type="number" placeholder="分鐘" min="0" style="width:60px"></td>
+    <td><input type="text" placeholder="備註（選填）"></td>
+    <td><button onclick="this.closest('tr').remove()" style="border:none;background:none;color:var(--text3);cursor:pointer;font-size:14px">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+function doExcelImport(){
+  const tbody=document.getElementById('excel-body');let count=0;let errs=[];
+  Array.from(tbody.rows).forEach((tr,i)=>{
+    const cells=tr.querySelectorAll('input,select');
+    const startRaw=cells[0].value.trim();
+    const endRaw=cells[1].value.trim();
+    const cat=cells[2].value;
+    const subcat=cells[3].value||null;
+    const title=cells[4].value.trim();
+    const notifMin=cells[5].value?parseInt(cells[5].value):null;
+    const note=cells[6].value.trim();
+    if(!startRaw&&!title)return;
+    if(!startRaw||!title){errs.push(`第${i+1}列缺少必填`);return;}
+    const isDateTime=startRaw.includes('T')||startRaw.includes(' ');
+    const timeStart=isDateTime?(startRaw.replace(' ','T').slice(0,16)):null;
+    const dateStart=!isDateTime?startRaw:null;
+    const timeEnd=endRaw&&isDateTime?(endRaw.replace(' ','T').slice(0,16)):null;
+    const dateEnd=endRaw&&!isDateTime?endRaw:null;
+    const catObj=getCat(subcat||cat);const prefix=catObj.name.slice(0,3).toUpperCase();
+    const existing=events.filter(e=>e.id?.startsWith(prefix+'-'));
+    const nums=existing.map(e=>parseInt(e.id.split('-').pop())||0);
+    const next=(nums.length?Math.max(...nums):0)+1;
+    const newId=`${prefix}-${String(next).padStart(3,'0')}`;
+    events.push({id:newId,title,cat,subcat,done:false,timeStart,timeEnd,dateStart,dateEnd,notif:!!notifMin,notifBefore:notifMin||0,note,recurId:null});
+    count++;
+  });
+  if(errs.length)toast('部分列有錯誤：'+errs.join('、'),'err');
+  if(count){save();closeExcelImport();buildSidebar();renderCurrent();toast(`已匯入 ${count} 筆事件`,'ok');}
 }
 
-// ─── Close modals on bg click ─────────────────────────────
-document.querySelectorAll('.overlay').forEach(el=>{
-  el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('open');});
-});
+// ══════════════════════════════════════════════
+// CLEAR
+// ══════════════════════════════════════════════
+function openClear(){
+  document.getElementById('clear-overlay').classList.add('open');
+  document.querySelectorAll('input[name=clr]').forEach(r=>r.addEventListener('change',function(){
+    document.getElementById('clr-range').style.display=this.value==='range'?'flex':'none';
+    document.getElementById('clr-search').style.display=this.value==='search'?'block':'none';
+  }));
+  document.getElementById('clr-q').addEventListener('input',function(){
+    const q=this.value.toLowerCase();
+    const found=events.filter(e=>e.title.toLowerCase().includes(q)||(e.note||'').toLowerCase().includes(q));
+    document.getElementById('clr-preview').textContent=q?`找到 ${found.length} 筆事件將被刪除`:'';
+  });
+}
+function closeClear(){document.getElementById('clear-overlay').classList.remove('open');}
+function doClear(){
+  const mode=document.querySelector('input[name=clr]:checked').value;
+  let count=0;
+  if(mode==='all'){if(!confirm('確定清空所有事件？'))return;count=events.length;events=[];recurs=[];}
+  else if(mode==='range'){
+    const from=document.getElementById('clr-from').value;
+    const to=document.getElementById('clr-to').value;
+    if(!from&&!to)return toast('請填寫日期範圍','err');
+    const before=events.length;
+    events=events.filter(e=>{const ds=(e.timeStart||e.dateStart||'').slice(0,10);return(from&&ds<from)||(to&&ds>to)||(!from&&!to);});
+    count=before-events.length;
+  } else {
+    const q=document.getElementById('clr-q').value.toLowerCase();
+    if(!q)return toast('請輸入搜尋關鍵字','err');
+    const before=events.length;
+    events=events.filter(e=>!e.title.toLowerCase().includes(q)&&!(e.note||'').toLowerCase().includes(q));
+    count=before-events.length;
+  }
+  save();closeClear();buildSidebar();renderCurrent();toast(`已清空 ${count} 筆事件`,'ok');
+}
 
-document.addEventListener('click',e=>{
-  if(!e.target.closest('.ac-wrap')) document.getElementById('ac-list').className='ac-list';
-});
+// ══════════════════════════════════════════════
+// PRINT
+// ══════════════════════════════════════════════
+function openPrint(){
+  const now=new Date();
+  document.getElementById('pr-from').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('pr-to').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('print-overlay').classList.add('open');
+}
+function closePrint(){document.getElementById('print-overlay').classList.remove('open');}
+function doPrint(){
+  const scale=document.getElementById('pr-scale').value;
+  const color=document.getElementById('pr-color').checked;
+  if(scale!=='auto')document.body.style.zoom=scale+'%';
+  if(!color){const s=document.createElement('style');s.id='noclr';s.textContent='*{filter:grayscale(1)!important}';document.head.appendChild(s);}
+  closePrint();
+  setTimeout(()=>{window.print();document.body.style.zoom='';const s=document.getElementById('noclr');if(s)s.remove();},300);
+}
+
+// ══════════════════════════════════════════════
+// OVERLAY CLOSE ON BG CLICK
+// ══════════════════════════════════════════════
+document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
 
 init();
 </script>
