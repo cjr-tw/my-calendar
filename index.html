@@ -97,13 +97,18 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
 .gantt-bar-row{height:6px;margin-bottom:1px;border-radius:3px;position:relative;cursor:pointer}
 /* Event chip */
 .echip{border-radius:3px;padding:1px 4px;font-size:10px;margin-bottom:1px;display:flex;align-items:flex-start;gap:2px;cursor:pointer;position:relative;min-height:16px;word-break:break-word;white-space:pre-wrap;line-height:1.3}
-.echip.done{opacity:.45;text-decoration:line-through}
+.echip.done{opacity:.4;text-decoration:line-through}
 .echip .etime{font-size:9px;opacity:.8;white-space:nowrap;flex-shrink:0;margin-top:1px}
 .echip .etitle{flex:1;word-break:break-word}
 .echip .enum{font-size:8px;opacity:.6;flex-shrink:0}
 .echip .enotif{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.85);flex-shrink:0;margin-top:3px}
+.echip-chk{width:11px;height:11px;border-radius:2px;border:1.5px solid rgba(255,255,255,.7);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;cursor:pointer;transition:all .15s;margin-top:2px}
+.echip-chk:hover{background:rgba(255,255,255,.3)}
+.echip-chk.on{background:rgba(255,255,255,.85);border-color:rgba(255,255,255,.85);color:#333}
 .more-lnk{font-size:10px;color:var(--text3);padding:1px 4px;cursor:pointer}
 .more-lnk:hover{color:var(--blue)}
+.show-time-btn{padding:3px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text3);font-size:11px;cursor:pointer;display:inline-flex;align-items:center;gap:3px}
+.show-time-btn.active{background:var(--blue-bg);color:var(--blue);border-color:#bfdbfe}
 
 /* ── Year view ── */
 .year-view{flex:1;overflow:auto;padding:14px}
@@ -271,6 +276,7 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
       <button onclick="navNext()">›</button>
     </div>
     <button class="tbtn" onclick="goToday()">今天</button>
+    <button class="show-time-btn active" id="show-time-btn" onclick="toggleShowTime()" title="顯示/隱藏時間">🕐 時間</button>
     <div class="view-tabs">
       <button class="vtab active" id="vt-month" onclick="setView('month')">月</button>
       <button class="vtab" id="vt-year" onclick="setView('year')">年</button>
@@ -563,6 +569,7 @@ let curYear,curMonth,curView='month';
 let editId=null,impData=null,editCatId=null;
 let ncColor=PALETTE[0],ecColor=PALETTE[0];
 let acIdx=-1;
+let showTime=true;
 
 // ══════════════════════════════════════════════
 // INIT / PERSIST
@@ -609,6 +616,13 @@ function toggleTog(btn){
   // side effects
   if(btn.id==='notif-tog') document.getElementById('notif-opts').style.display=on?'flex':'none';
   if(btn.id==='recur-tog') document.getElementById('recur-panel').style.display=on?'block':'none';
+}
+function toggleShowTime(){
+  showTime=!showTime;
+  const btn=document.getElementById('show-time-btn');
+  btn.className='show-time-btn'+(showTime?' active':'');
+  btn.textContent=showTime?'🕐 時間':'🕐 隱藏中';
+  if(curView==='month')renderMonth();
 }
 
 // ══════════════════════════════════════════════
@@ -700,19 +714,22 @@ function renderMonth(){
     const timeEvs=visibleEventsOnDate(ds).filter(e=>e.timeStart&&!e.dateStart);
     timeEvs.slice(0,3).forEach(ev=>{
       const col=evColor(ev);
-      const time=ev.timeStart?ev.timeStart.slice(11,16):'';
+      const time=showTime&&ev.timeStart?ev.timeStart.slice(11,16):'';
       const notifDot=ev.notif?`<span class="enotif"></span>`:'';
-      const title=ev.title||(ev.done?'✓ ':'');
       html+=`<div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" onclick="event.stopPropagation();openEvModal('${ev.id}',null)" title="${ev.title}">
-        ${notifDot}<span class="etime">${time}</span><span class="etitle">${ev.title}</span></div>`;
+        <span class="echip-chk${ev.done?' on':''}" onclick="event.stopPropagation();toggleDone('${ev.id}')" title="勾選完成">${ev.done?'✓':''}</span>
+        ${notifDot}${time?`<span class="etime">${time}</span>`:''}
+        <span class="etitle">${ev.title}</span></div>`;
     });
     // Both type events
     const bothEvs=visibleEventsOnDate(ds).filter(e=>e.timeStart&&e.dateStart);
     bothEvs.forEach(ev=>{
       const col=evColor(ev);
-      const time=ev.timeStart?ev.timeStart.slice(11,16):'';
+      const time=showTime&&ev.timeStart?ev.timeStart.slice(11,16):'';
       html+=`<div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" onclick="event.stopPropagation();openEvModal('${ev.id}',null)">
-        <span class="etime">${time}</span><span class="etitle">${ev.title}</span></div>`;
+        <span class="echip-chk${ev.done?' on':''}" onclick="event.stopPropagation();toggleDone('${ev.id}')" title="勾選完成">${ev.done?'✓':''}</span>
+        ${time?`<span class="etime">${time}</span>`:''}
+        <span class="etitle">${ev.title}</span></div>`;
     });
     // Gantt bars (date-only events) — at the bottom
     const ganttEvs=visibleEventsOnDate(ds).filter(e=>e.dateStart&&!e.timeStart);
