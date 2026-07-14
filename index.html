@@ -708,7 +708,7 @@ function renderMonth(){
   cells.forEach(info=>{
     const ds=fmtD(info.y,info.m,info.d);
     const isToday=!info.other&&info.d===today.getDate()&&info.m===today.getMonth()&&info.y===today.getFullYear();
-    html+=`<div class="dcell${info.other?' other':''}${isToday?' today':''}" onclick="openEvModal(null,'${ds}')">`;
+    html+=`<div class="dcell${info.other?' other':''}${isToday?' today':''}" data-date="${ds}" data-action="newev">`;
     html+=`<div class="dnum">${info.d}</div>`;
     // Regular events (time-based)
     const timeEvs=visibleEventsOnDate(ds).filter(e=>e.timeStart&&!e.dateStart);
@@ -716,8 +716,9 @@ function renderMonth(){
       const col=evColor(ev);
       const time=showTime&&ev.timeStart?ev.timeStart.slice(11,16):'';
       const notifDot=ev.notif?`<span class="enotif"></span>`:'';
-      html+=`<div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" onclick="event.stopPropagation();openEvModal('${ev.id}',null)" title="${ev.title}">
-        <span class="echip-chk${ev.done?' on':''}" onclick="event.stopPropagation();toggleDone('${ev.id}')" title="勾選完成">${ev.done?'✓':''}</span>
+      // Bug fix 4: 用 data-id 避免 id 含特殊字元時 inline onclick 語法錯誤
+      html+=`<div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" data-evid="${ev.id}" data-action="open" title="${ev.title}">
+        <span class="echip-chk${ev.done?' on':''}" data-evid="${ev.id}" data-action="done" title="勾選完成">${ev.done?'✓':''}</span>
         ${notifDot}${time?`<span class="etime">${time}</span>`:''}
         <span class="etitle">${ev.title}</span></div>`;
     });
@@ -726,8 +727,8 @@ function renderMonth(){
     bothEvs.forEach(ev=>{
       const col=evColor(ev);
       const time=showTime&&ev.timeStart?ev.timeStart.slice(11,16):'';
-      html+=`<div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" onclick="event.stopPropagation();openEvModal('${ev.id}',null)">
-        <span class="echip-chk${ev.done?' on':''}" onclick="event.stopPropagation();toggleDone('${ev.id}')" title="勾選完成">${ev.done?'✓':''}</span>
+      html+=`<div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" data-evid="${ev.id}" data-action="open">
+        <span class="echip-chk${ev.done?' on':''}" data-evid="${ev.id}" data-action="done" title="勾選完成">${ev.done?'✓':''}</span>
         ${time?`<span class="etime">${time}</span>`:''}
         <span class="etitle">${ev.title}</span></div>`;
     });
@@ -738,13 +739,31 @@ function renderMonth(){
       const isStart=ev.dateStart===ds;
       const isEnd=(ev.dateEnd||ev.dateStart)===ds;
       const style=`background:${col.bg};margin-left:${isStart?'0':'-4px'};margin-right:${isEnd?'0':'-4px'};border-radius:${isStart?'3px':0} ${isEnd?'3px':0} ${isEnd?'3px':0} ${isStart?'3px':0}`;
-      html+=`<div class="gantt-bar-row" style="${style}" onclick="event.stopPropagation();openEvModal('${ev.id}',null)" title="${ev.title}"></div>`;
+      html+=`<div class="gantt-bar-row" style="${style}" data-evid="${ev.id}" data-action="open" title="${ev.title}"></div>`;
     });
-    if((timeEvs.length+bothEvs.length)>3)html+=`<div class="more-lnk" onclick="event.stopPropagation();setView('list')">＋${(timeEvs.length+bothEvs.length)-3}</div>`;
+    if((timeEvs.length+bothEvs.length)>3)html+=`<div class="more-lnk" data-action="list">＋${(timeEvs.length+bothEvs.length)-3}</div>`;
     html+=`</div>`;
   });
   html+=`</div>`;
   wrap.innerHTML=html;
+  // Bug fix 5: event delegation 取代全部 inline onclick，避免 id 特殊字元問題
+  if(!wrap._delegated){
+    wrap._delegated=true;
+    wrap.addEventListener('click',function(e){
+      // done checkbox
+      const chk=e.target.closest('[data-action="done"]');
+      if(chk){e.stopPropagation();toggleDone(chk.dataset.evid);return;}
+      // open event
+      const chip=e.target.closest('[data-action="open"]');
+      if(chip){e.stopPropagation();openEvModal(chip.dataset.evid,null);return;}
+      // new event on cell
+      const cell=e.target.closest('[data-action="newev"]');
+      if(cell){openEvModal(null,cell.dataset.date);return;}
+      // more link → list view
+      const more=e.target.closest('[data-action="list"]');
+      if(more){e.stopPropagation();setView('list');return;}
+    });
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -1264,17 +1283,18 @@ function readImpFile(file){
 }
 function parseCSV(text){
   const lines=text.replace(/^\uFEFF/,'').split('\n').slice(1).filter(l=>l.trim());
-  return lines.map(line=>{
+  return lines.map((line,idx)=>{
     const cols=[];let buf='',inq=false;
     for(const c of line){if(c==='"'){inq=!inq;}else if(c===','&&!inq){cols.push(buf);buf='';}else buf+=c;}cols.push(buf);
-    return{id:cols[0]||'IMP-'+Date.now(),title:cols[1]||'',cat:cols[2]||cats[0]?.id||'',subcat:cols[3]||null,timeStart:cols[4]||null,timeEnd:cols[5]||null,dateStart:cols[6]||null,dateEnd:cols[7]||null,notif:cols[8]==='true',notifBefore:parseInt(cols[9])||0,done:cols[10]==='true',note:cols[11]||'',recurId:cols[12]||null};
+    // Bug fix 1: 每筆用 idx 保證 id 唯一，避免 Date.now() 在同一毫秒重複
+    return{id:cols[0]||('IMP-'+Date.now()+'-'+idx),title:cols[1]||'',cat:cols[2]||cats[0]?.id||'',subcat:cols[3]||null,timeStart:cols[4]||null,timeEnd:cols[5]||null,dateStart:cols[6]||null,dateEnd:cols[7]||null,notif:cols[8]==='true',notifBefore:parseInt(cols[9])||0,done:cols[10]==='true',note:cols[11]||'',recurId:cols[12]||null};
   });
 }
 function parseICS(text){
   const evs=[];let cur=null;
   text.split(/\r?\n/).forEach(line=>{
     if(line==='BEGIN:VEVENT'){cur={};}
-    else if(line==='END:VEVENT'&&cur){if(cur.timeStart||cur.dateStart)evs.push({id:cur.uid||'ICS-'+Date.now(),title:cur.title||'',cat:cats[0]?.id||'',subcat:null,done:false,timeStart:cur.timeStart||null,timeEnd:null,dateStart:cur.dateStart||null,dateEnd:cur.dateEnd||null,notif:false,notifBefore:0,note:cur.note||'',recurId:null});cur=null;}
+    else if(line==='END:VEVENT'&&cur){if(cur.timeStart||cur.dateStart)evs.push({id:cur.uid||('ICS-'+Date.now()+'-'+evs.length),title:cur.title||'',cat:cats[0]?.id||'',subcat:null,done:false,timeStart:cur.timeStart||null,timeEnd:null,dateStart:cur.dateStart||null,dateEnd:cur.dateEnd||null,notif:false,notifBefore:0,note:cur.note||'',recurId:null});cur=null;}
     else if(cur){
       if(line.startsWith('SUMMARY:'))cur.title=line.slice(8);
       else if(line.startsWith('UID:'))cur.uid=line.slice(4);
@@ -1339,6 +1359,7 @@ function doExcelImport(){
     const timeEnd=endRaw&&isDateTime?(endRaw.replace(' ','T').slice(0,16)):null;
     const dateEnd=endRaw&&!isDateTime?endRaw:null;
     const catObj=getCat(subcat||cat);const prefix=catObj.name.slice(0,3).toUpperCase();
+    // Bug fix 3: 每次重新掃描 events（含本次已新增的），確保流水號不衝突
     const existing=events.filter(e=>e.id?.startsWith(prefix+'-'));
     const nums=existing.map(e=>parseInt(e.id.split('-').pop())||0);
     const next=(nums.length?Math.max(...nums):0)+1;
