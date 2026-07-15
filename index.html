@@ -745,6 +745,43 @@ function init(){
   activeFilter=new Set(cats.map(c=>c.id));
   buildSidebar();buildCatSelects();buildNcColors();render();
   requestNotifPerm();setInterval(checkNotifs,60000);
+  setupDelegation();
+}
+
+function setupDelegation(){
+  // 統一在 document 層級處理所有 data-action 點擊
+  // 這樣不管 innerHTML 怎麼重寫，delegation 永遠有效
+  document.addEventListener('click',function(e){
+    // ── 勾選完成（月視圖 echip-chk、清單 done-chk）──
+    const chk=e.target.closest('[data-action="done"]');
+    if(chk){
+      e.stopPropagation();
+      const id=chk.dataset.evid;
+      if(id){toggleDone(id);}
+      return;
+    }
+    // ── 開啟事件（echip、gantt bar、清單 lev）──
+    const chip=e.target.closest('[data-action="open"]');
+    if(chip){
+      e.stopPropagation();
+      const id=chip.dataset.evid;
+      if(id){openEvModal(id,null);}
+      return;
+    }
+    // ── 新增事件（點空白日期格）──
+    const cell=e.target.closest('[data-action="newev"]');
+    if(cell){
+      openEvModal(null,cell.dataset.date);
+      return;
+    }
+    // ── 更多事件 → 清單視圖 ──
+    const more=e.target.closest('[data-action="list"]');
+    if(more){
+      e.stopPropagation();
+      setView('list');
+      return;
+    }
+  });
 }
 function load(){
   try{const d=localStorage.getItem('cal2');if(d){const p=JSON.parse(d);cats=p.cats||cats;events=p.events||events;recurs=p.recurs||recurs;customHolidays=p.customHolidays||[];showTWHolidays=p.showTWHolidays!==false;}}catch(e){}
@@ -944,25 +981,7 @@ function renderMonth(){
   });
   html+=`</div>`;
   wrap.innerHTML=html;
-  // Bug fix 5: event delegation 取代全部 inline onclick，避免 id 特殊字元問題
-  if(!wrap._delegated){
-    wrap._delegated=true;
-    wrap.addEventListener('click',function(e){
-      // done checkbox
-      const chk=e.target.closest('[data-action="done"]');
-      if(chk){e.stopPropagation();toggleDone(chk.dataset.evid);return;}
-      // open event
-      const chip=e.target.closest('[data-action="open"]');
-      if(chip){e.stopPropagation();openEvModal(chip.dataset.evid,null);return;}
-      // new event on cell
-      const cell=e.target.closest('[data-action="newev"]');
-      if(cell){openEvModal(null,cell.dataset.date);return;}
-      // more link → list view
-      const more=e.target.closest('[data-action="list"]');
-      if(more){e.stopPropagation();setView('list');return;}
-    });
-  }
-}
+}  // end renderMonth
 
 // ══════════════════════════════════════════════
 // YEAR VIEW (Gantt style)
@@ -1032,7 +1051,7 @@ function renderList(){
       const rb=ev.recurId?`<span class="badge recur">↻週期</span>`:'';
       const db=ev.done?`<span class="badge done-b">✓完成</span>`:'';
       const sb=ev.subcat?`<span class="badge sub">${getCat(ev.subcat).name}</span>`:'';
-      html+=`<div class="lev${ev.done?' done':''}" onclick="openEvModal('${ev.id}',null)">
+      html+=`<div class="lev${ev.done?' done':''}" data-evid="${ev.id}" data-action="open">
         <div class="cbar" style="background:${cat.bg}"></div>
         <div class="lev-body">
           <div class="lev-title${ev.done?' done':''}">
@@ -1045,7 +1064,7 @@ function renderList(){
             ${ev.note?`<span title="${ev.note}">📝 ${ev.note.slice(0,20)}${ev.note.length>20?'…':''}</span>`:''}
           </div>
         </div>
-        <div class="lev-chk"><div class="done-chk${ev.done?' on':''}" onclick="event.stopPropagation();toggleDone('${ev.id}')" title="標記完成">✓</div></div>
+        <div class="lev-chk"><div class="done-chk${ev.done?' on':''}" data-evid="${ev.id}" data-action="done" title="標記完成">✓</div></div>
       </div>`;
     });
     html+=`</div>`;
