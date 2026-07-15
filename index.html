@@ -70,7 +70,8 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
 .search-wrap{position:relative;margin-left:auto}
 .search-wrap input{padding:5px 10px 5px 28px;border:1px solid var(--border2);border-radius:20px;font-size:12px;width:180px;background:var(--surface)}
 .search-wrap input:focus{outline:none;border-color:var(--blue);width:220px;transition:width .2s}
-.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none}
+.search-icon-btn{position:absolute;left:6px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;background:none;border:none;cursor:pointer;padding:2px 4px;line-height:1;z-index:1}
+.search-icon-btn:hover{color:var(--blue)}
 .search-results{position:absolute;top:110%;right:0;width:320px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;max-height:300px;overflow-y:auto;display:none}
 .search-results.open{display:block}
 .sr-item{padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px}
@@ -313,8 +314,12 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
       <button class="vtab" id="vt-list" onclick="setView('list')">清單</button>
     </div>
     <div class="search-wrap">
-      <span class="search-icon">🔍</span>
-      <input type="text" placeholder="搜尋事件…" id="search-input" oninput="onSearch(this.value)" onkeydown="onSearchKey(event)" autocomplete="off">
+      <button class="search-icon-btn" onclick="triggerSearch()" title="搜尋">🔍</button>
+      <input type="text" placeholder="搜尋事件…" id="search-input"
+        oninput="onSearch(this.value)"
+        onfocus="onSearch(this.value)"
+        onkeydown="onSearchKey(event)"
+        autocomplete="off">
       <div class="search-results" id="search-results"></div>
     </div>
   </div>
@@ -1565,7 +1570,7 @@ function onSearch(val){
   if(!found.length){res.innerHTML=`<div style="padding:12px;color:var(--text3);font-size:13px">無結果</div>`;res.className='search-results open';return;}
   res.innerHTML=found.map(ev=>{
     const col=evColor(ev);const ds=(ev.timeStart||ev.dateStart||'').slice(0,10);
-    return`<div class="sr-item" onclick="openEvModal('${ev.id}',null);document.getElementById('search-results').className='search-results'">
+    return`<div class="sr-item" data-evid="${ev.id}" data-action="open" onclick="document.getElementById('search-results').className='search-results'">
       <div class="sr-dot" style="background:${col.bg}"></div>
       <div><div class="sr-title">${ev.title}</div><div class="sr-meta">${ds} ‧ ${getCat(ev.subcat||ev.cat).name}</div></div>
       <button class="sr-del" onclick="event.stopPropagation();delSearchResult('${ev.id}')">刪除</button>
@@ -1573,14 +1578,36 @@ function onSearch(val){
   }).join('');
   res.className='search-results open';
 }
-function onSearchKey(e){if(e.key==='Escape')document.getElementById('search-results').className='search-results';}
+function onSearchKey(e){
+  if(e.key==='Escape'){
+    document.getElementById('search-results').className='search-results';
+    document.getElementById('search-input').blur();
+  } else if(e.key==='Enter'){
+    e.preventDefault();
+    triggerSearch();
+  }
+}
+function triggerSearch(){
+  const input=document.getElementById('search-input');
+  input.focus();
+  onSearch(input.value);
+}
 function delSearchResult(id){
   if(!confirm('確定刪除此事件？'))return;
   events=events.filter(e=>e.id!==id);save();buildSidebar();renderCurrent();
   onSearch(document.getElementById('search-input').value);toast('已刪除','ok');
 }
 function openSearch(q){document.getElementById('search-input').value=q;onSearch(q);}
-document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('search-results').className='search-results';if(!e.target.closest('.ac-wrap'))document.getElementById('ac-list').className='ac-list';});
+document.addEventListener('click',e=>{
+  // 點搜尋框外面：關閉結果面板（但不清空 input）
+  if(!e.target.closest('.search-wrap')){
+    document.getElementById('search-results').className='search-results';
+  }
+  // 點自動完成框外面：關閉 ac-list
+  if(!e.target.closest('.ac-wrap')){
+    document.getElementById('ac-list').className='ac-list';
+  }
+});
 
 // ══════════════════════════════════════════════
 // NOTIFICATIONS
