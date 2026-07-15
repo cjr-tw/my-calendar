@@ -455,22 +455,22 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
   <!-- 週期操作區（只有週期事件才顯示） -->
   <div id="recur-action-wrap" style="display:none;padding:0 18px 12px">
     <div class="recur-action-bar">
-      <div class="rab-label">💾 儲存範圍</div>
+      <div class="rab-label">💾 儲存範圍 <span style="color:var(--red);font-weight:400;text-transform:none">（請選擇）</span></div>
       <div class="rab-btns">
-        <button class="rab-btn sel" id="save-scope-one"   onclick="setSaveScope('one')"   title="只更新這一筆，從系列獨立出來">只改這一筆</button>
-        <button class="rab-btn"     id="save-scope-after" onclick="setSaveScope('after')" title="更新這筆及之後所有同系列事件">這筆及之後</button>
-        <button class="rab-btn"     id="save-scope-all"   onclick="setSaveScope('all')"   title="更新整個系列所有事件">整個系列</button>
+        <button class="rab-btn" id="save-scope-one"   onclick="setSaveScope('one')"   title="只更新這一筆，從系列獨立出來">只改這一筆</button>
+        <button class="rab-btn" id="save-scope-after" onclick="setSaveScope('after')" title="更新這筆及之後所有同系列事件">這筆及之後</button>
+        <button class="rab-btn" id="save-scope-all"   onclick="setSaveScope('all')"   title="更新整個系列所有事件">整個系列</button>
       </div>
-      <div class="rab-desc" id="save-scope-desc">只改這一筆：此事件會從系列獨立，之後不受系列影響，刪除系列也不會刪到它。</div>
+      <div class="rab-desc" id="save-scope-desc" style="color:var(--text3)">⬆ 請先選擇儲存要套用的範圍，才能按「儲存」</div>
     </div>
     <div class="recur-action-bar" style="margin-top:8px">
-      <div class="rab-label">🗑 刪除範圍</div>
+      <div class="rab-label">🗑 刪除範圍 <span style="color:var(--red);font-weight:400;text-transform:none">（要刪除才需選）</span></div>
       <div class="rab-btns">
-        <button class="rab-btn danger sel" id="del-scope-one"   onclick="setDelScope('one')"   >只刪這一筆</button>
-        <button class="rab-btn danger"     id="del-scope-after" onclick="setDelScope('after')" >這筆及之後</button>
-        <button class="rab-btn danger"     id="del-scope-all"   onclick="setDelScope('all')"   >整個系列</button>
+        <button class="rab-btn danger" id="del-scope-one"   onclick="setDelScope('one')"   >只刪這一筆</button>
+        <button class="rab-btn danger" id="del-scope-after" onclick="setDelScope('after')" >這筆及之後</button>
+        <button class="rab-btn danger" id="del-scope-all"   onclick="setDelScope('all')"   >整個系列</button>
       </div>
-      <div class="rab-desc" id="del-scope-desc" style="color:var(--red)">只刪這一筆：其他月份的事件保留，系列繼續存在。</div>
+      <div class="rab-desc" id="del-scope-desc" style="color:var(--text3)">⬆ 按「刪除」前請先選擇範圍</div>
     </div>
   </div>
   <div class="mfoot">
@@ -770,6 +770,7 @@ let curYear,curMonth,curView='month';
 let editId=null,impData=null,editCatId=null;
 let saveScope='one'; // 'one' | 'after' | 'all'
 let _curNotifTime='09:00'; // genRecur 產生事件時使用的通知時間
+let _curSpanDays=0; // genRecur 產生事件時的日期段長度（天）
 let delScope='one';  // 'one' | 'after' | 'all'
 let ncColor=PALETTE[0],ecColor=PALETTE[0];
 let acIdx=-1;
@@ -880,13 +881,38 @@ function makeCatRow(cat,isSub){
   const div=document.createElement('div');
   div.className='cat-row'+(isSub?' sub-row':'');
   div.draggable=true;div.dataset.id=cat.id;
+  // 母類別：計算子類別勾選狀態（全選✓ / 部分− / 全不選空白）
+  let chkState=on?'on':'';
+  let chkSymbol='✓';
+  const mySubs=subCats(cat.id);
+  if(!cat.parentId&&mySubs.length){
+    const groupIds=[cat.id,...mySubs.map(s=>s.id)];
+    const onCount=groupIds.filter(id=>activeFilter.has(id)).length;
+    if(onCount===groupIds.length){chkState='on';chkSymbol='✓';}
+    else if(onCount>0){chkState='on';chkSymbol='−';}
+    else{chkState='';chkSymbol='✓';}
+  }
   div.innerHTML=`<span class="drag-handle" title="拖曳排序">⠿</span>
-    <div class="chk ${on?'on':''}" style="${on?`background:${cat.bg}`:''}">✓</div>
+    <div class="chk ${chkState}" style="${chkState?`background:${cat.bg}`:''}">${chkSymbol}</div>
     <div class="cat-dot" style="background:${cat.bg}"></div>
     <span class="cat-label">${cat.name}</span>
     <span class="cat-cnt">${events.filter(e=>(e.cat===cat.id||e.subcat===cat.id)).length}</span>`;
   div.addEventListener('click',()=>{
-    if(on){if(activeFilter.size>1)activeFilter.delete(cat.id);}else activeFilter.add(cat.id);
+    const subs=subCats(cat.id);
+    if(!cat.parentId&&subs.length){
+      // 母類別（有子類別）：全選 / 取消全選 整個群組
+      const groupIds=[cat.id,...subs.map(s=>s.id)];
+      const allOn=groupIds.every(id=>activeFilter.has(id));
+      if(allOn){
+        groupIds.forEach(id=>activeFilter.delete(id));
+      } else {
+        groupIds.forEach(id=>activeFilter.add(id));
+      }
+    } else {
+      // 子類別或無子類別的母類別：單獨切換
+      if(on)activeFilter.delete(cat.id);
+      else activeFilter.add(cat.id);
+    }
     buildSidebar();renderCurrent();
   });
   div.addEventListener('dragstart',e=>{e.dataTransfer.setData('catId',cat.id);div.classList.add('dragging');});
@@ -1309,8 +1335,16 @@ function openEvModal(id,dateStr){
   document.getElementById('recur-action-wrap').style.display=isRecurEdit?'block':'none';
   document.getElementById('ev-del').style.display=ev?'':'none';
   if(isRecurEdit){
-    saveScope='one';delScope='one';
-    setSaveScope('one');setDelScope('one');
+    // 不預設，強制用戶選擇
+    saveScope=null;delScope=null;
+    ['one','after','all'].forEach(x=>{
+      const sb=document.getElementById('save-scope-'+x);if(sb)sb.className='rab-btn';
+      const db=document.getElementById('del-scope-'+x);if(db)db.className='rab-btn danger';
+    });
+    document.getElementById('save-scope-desc').textContent='⬆ 請先選擇儲存要套用的範圍，才能按「儲存」';
+    document.getElementById('save-scope-desc').style.color='var(--text3)';
+    document.getElementById('del-scope-desc').textContent='⬆ 按「刪除」前請先選擇範圍';
+    document.getElementById('del-scope-desc').style.color='var(--text3)';
   }
 
   document.getElementById('ev-overlay').classList.add('open');
@@ -1335,7 +1369,9 @@ function setSaveScope(s){
     const btn=document.getElementById('save-scope-'+x);
     if(btn)btn.className='rab-btn'+(x===s?' sel':'');
   });
-  document.getElementById('save-scope-desc').textContent=SAVE_DESC[s];
+  const desc=document.getElementById('save-scope-desc');
+  desc.textContent=SAVE_DESC[s];
+  desc.style.color='var(--text2)';
 }
 function setDelScope(s){
   delScope=s;
@@ -1343,7 +1379,9 @@ function setDelScope(s){
     const btn=document.getElementById('del-scope-'+x);
     if(btn)btn.className='rab-btn danger'+(x===s?' danger-sel':'');
   });
-  document.getElementById('del-scope-desc').textContent=DEL_DESC[s];
+  const desc=document.getElementById('del-scope-desc');
+  desc.textContent=DEL_DESC[s];
+  desc.style.color='var(--red)';
 }
 function doDelete(){
   const ev=events.find(e=>e.id===editId);
@@ -1357,6 +1395,10 @@ function doDelete(){
     return;
   }
   // 週期事件：依 delScope
+  if(!delScope){
+    toast('⚠️ 這是週期事件，請先在下方選擇「刪除範圍」','err');
+    return;
+  }
   const scope=delScope;
   const curDate=(ev.timeStart||ev.dateStart||'').slice(0,10);
   const rid=ev.recurId;
@@ -1406,6 +1448,8 @@ function saveEvent(){
     if(dsVal&&deVal&&dsVal!==deVal){dateStart=dsVal;dateEnd=deVal;}
   }
   if(!timeStart&&!dateStart)return toast('請填寫日期','err');
+  // 日期段長度（供 genRecur 產生週期事件時傳遞）— 必須在 dateStart/dateEnd 宣告後計算
+  _curSpanDays=(dateStart&&dateEnd&&dateEnd!==dateStart)?Math.max(0,Math.round((new Date(dateEnd)-new Date(dateStart))/86400000)):0;
 
   const oldEv=editId?events.find(e=>e.id===editId):null;
   const isRecurEdit=!!(oldEv&&oldEv.recurId);
@@ -1413,6 +1457,10 @@ function saveEvent(){
 
   // ── 週期編輯：依 saveScope 處理 ──
   if(isRecurEdit){
+    if(!saveScope){
+      toast('⚠️ 這是週期事件，請先在下方選擇「儲存範圍」','err');
+      return;
+    }
     const rid=oldEv.recurId;
     const curDate=(oldEv.timeStart||oldEv.dateStart||'').slice(0,10);
     const scope=saveScope;
@@ -1430,6 +1478,8 @@ function saveEvent(){
         const d=(e.timeStart||e.dateStart||'').slice(0,10);
         return d<curDate;
       });
+      // ⭐ 編輯的這筆本身先存回去（保留新的日期段設定）
+      events.push({id:editId,title,cat,subcat,done,timeStart:timeStart||null,timeEnd:timeEnd||null,dateStart:dateStart||null,dateEnd:dateEnd||null,notif,notifBefore,notifTime,note,recurId:rid});
       // 更新 recur 設定
       if(hasRecur){
         const interval=parseInt(document.getElementById('ri').value)||1;
@@ -1439,10 +1489,10 @@ function saveEvent(){
         const count=document.getElementById('rc').value?parseInt(document.getElementById('rc').value):null;
         const existing=recurs.find(r=>r.id===rid);
         if(existing)Object.assign(existing,{interval,unit,holiday,until,count,baseTitle:title,cat,subcat});
-        // 從 curDate 開始重新產生
-        genRecurFrom(rid,title,cat,subcat,timeStart,dateStart,timeEnd,notif,notifBefore,note,interval,unit,holiday,until,count,curDate);
+        // 從 curDate 之後開始重新產生，日期段長度（dateEnd-dateStart）會傳遞下去
+        genRecurFrom(rid,title,cat,subcat,timeStart,dateStart,timeEnd,notif,notifBefore,note,interval,unit,holiday,until,count,curDate,false,dateEnd);
       }
-      toast('已更新（這筆及之後）','ok');
+      toast('已更新（這筆及之後，日期段長度已同步）','ok');
 
     } else { // all
       // 整個系列：全部重新產生
@@ -1458,7 +1508,7 @@ function saveEvent(){
         const seriesEvs=events.filter(e=>e.recurId===rid).sort((a,b)=>(a.timeStart||a.dateStart||'').localeCompare(b.timeStart||b.dateStart||''));
         const firstDate=(seriesEvs[0]?.timeStart||seriesEvs[0]?.dateStart||curDate).slice(0,10);
         events=events.filter(e=>e.recurId!==rid);
-        genRecurFrom(rid,title,cat,subcat,timeStart,dateStart,timeEnd,notif,notifBefore,note,interval,unit,holiday,until,count,firstDate,true);
+        genRecurFrom(rid,title,cat,subcat,timeStart,dateStart,timeEnd,notif,notifBefore,note,interval,unit,holiday,until,count,firstDate,true,dateEnd);
       } else {
         // 關掉週期：全部事件 recurId 清空
         events.filter(e=>e.recurId===rid).forEach(e=>{e.title=title;e.cat=cat;e.subcat=subcat;e.notif=notif;e.notifBefore=notifBefore;e.note=note;e.recurId=null;});
@@ -1498,12 +1548,19 @@ function saveEvent(){
 // RECURRENCE
 // ══════════════════════════════════════════════
 // 從 fromDate 開始產生（includeFrom=true 表示 fromDate 這天本身也要產生）
-function genRecurFrom(recurId,title,cat,subcat,timeStart,dateStart,timeEnd,notif,notifBefore,note,interval,unit,holiday,until,count,fromDate,includeFrom=false){
+// dateEndArg: 若原事件是日期段（如 6/18–6/25），span 天數會傳遞到每個未來事件
+function genRecurFrom(recurId,title,cat,subcat,timeStart,dateStart,timeEnd,notif,notifBefore,note,interval,unit,holiday,until,count,fromDate,includeFrom=false,dateEndArg=null){
   const base=new Date(fromDate);
   const stop=until?new Date(until):new Date(base.getFullYear()+3,base.getMonth(),base.getDate());
   const max=count||60;let gen=0;
   const cat2=getCat(subcat||cat);
   const prefix=cat2.name.slice(0,3).toUpperCase()||'EV';
+  // 計算日期段長度（天數差），傳遞到每個未來事件
+  let spanDays=0;
+  if(dateStart&&dateEndArg&&dateEndArg!==dateStart){
+    spanDays=Math.round((new Date(dateEndArg)-new Date(dateStart))/86400000);
+    if(spanDays<0)spanDays=0;
+  }
   let cur=includeFrom?new Date(base.getTime()-1):new Date(base);
   while(gen<max){
     if(!includeFrom||gen>0)addUnit(cur,interval,unit);
@@ -1518,7 +1575,13 @@ function genRecurFrom(recurId,title,cat,subcat,timeStart,dateStart,timeEnd,notif
     const next=(nums.length?Math.max(...nums):0)+1;
     const newId=`${prefix}-${String(next).padStart(3,'0')}`;
     const newTs=timeStart?ds+timeStart.slice(10):null;
-    events.push({id:newId,title,cat,subcat,done:false,timeStart:newTs,timeEnd:timeEnd||null,dateStart:dateStart?ds:null,dateEnd:dateStart?ds:null,notif,notifBefore,notifTime:_curNotifTime,note,recurId});
+    // 日期段結束日 = 開始日 + span 天數（遇假日調整只動開始日，持續長度不變）
+    let deVal=null;
+    if(dateStart){
+      const endD=new Date(adj);endD.setDate(endD.getDate()+spanDays);
+      deVal=endD.toISOString().slice(0,10);
+    }
+    events.push({id:newId,title,cat,subcat,done:false,timeStart:newTs,timeEnd:timeEnd||null,dateStart:dateStart?ds:null,dateEnd:deVal,notif,notifBefore,notifTime:_curNotifTime,note,recurId});
     gen++;
   }
 }
@@ -1541,7 +1604,12 @@ function genRecur(recurId,title,cat,subcat,timeStart,dateStart,notif,notifBefore
       const next=(nums.length?Math.max(...nums):0)+1;
       const newId=`${prefix}-${String(next).padStart(3,'0')}`;
       const newTs=timeStart?ds+timeStart.slice(10):null;
-      events.push({id:newId,title,cat,subcat,done:false,timeStart:newTs,timeEnd:null,dateStart:dateStart?ds:null,dateEnd:dateStart?ds:null,notif,notifBefore,notifTime:_curNotifTime,note,recurId});
+      let deVal=null;
+      if(dateStart){
+        const endD=new Date(adj);endD.setDate(endD.getDate()+_curSpanDays);
+        deVal=endD.toISOString().slice(0,10);
+      }
+      events.push({id:newId,title,cat,subcat,done:false,timeStart:newTs,timeEnd:null,dateStart:dateStart?ds:null,dateEnd:deVal,notif,notifBefore,notifTime:_curNotifTime,note,recurId});
     }
     gen++;
   }
