@@ -120,7 +120,14 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
 .rab-btn.danger:hover{border-color:var(--red);color:var(--red);background:#fff5f5}
 /* Gantt 色條區塊固定在格子頂部 */
 .gantt-zone{margin:-3px -3px 3px -3px;display:flex;flex-direction:column;gap:1px;padding:2px 0}
-.gantt-bar-row{height:7px;cursor:pointer;flex-shrink:0}
+.gantt-bar-row{height:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;overflow:hidden}
+.gantt-bar-row .gbar-text{font-size:10px;font-weight:500;padding:0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1}
+.gantt-bar-row.done{opacity:.4}
+.gantt-bar-row.done .gbar-text{text-decoration:line-through}
+.gantt-bar-row .gbar-chk{width:11px;height:11px;border-radius:2px;border:1.5px solid rgba(255,255,255,.6);flex-shrink:0;margin-left:3px;cursor:pointer;position:relative;background:rgba(0,0,0,.1)}
+.gantt-bar-row .gbar-chk:hover{border-color:rgba(255,255,255,.95);background:rgba(255,255,255,.25)}
+.gantt-bar-row .gbar-chk.on{background:rgba(255,255,255,.9);border-color:rgba(255,255,255,.9)}
+.gantt-bar-row .gbar-chk.on::after{content:'✓';position:absolute;top:-2px;left:1px;font-size:9px;color:#333;font-weight:700}
 /* 事件區塊在甘特下方 */
 .ev-zone{flex:1;display:flex;flex-direction:column}
 /* Event chip */
@@ -294,7 +301,14 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
   <div class="sb-actions">
     <button class="sb-btn" onclick="openExport()">⬇ 匯出行事曆</button>
     <button class="sb-btn" onclick="openImport()">⬆ 匯入行事曆</button>
-    <button class="sb-btn" onclick="checkNotifsManual()">🔔 測試通知</button>
+    <div style="padding:4px 8px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">🔔 通知測試</div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <input id="test-notif-min" type="number" value="60" min="1" max="1440" style="width:52px;padding:4px 6px;border:1px solid var(--border2);border-radius:6px;font-size:12px" title="檢查幾分鐘內的事件">
+        <span style="font-size:11px;color:var(--text3)">分內</span>
+        <button class="tbtn" style="padding:4px 8px;font-size:11px" onclick="checkNotifsManual()">測試</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -365,36 +379,53 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
         </div>
       </div>
     </div>
-    <!-- Time -->
+    <!-- 📅 日期（必填） -->
     <div class="field">
-      <label>時間 / 日期</label>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
-        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="radio" name="ttype" value="time" id="tt-time" onchange="setTimeType('time')" checked> 時間段</label>
-        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="radio" name="ttype" value="date" id="tt-date" onchange="setTimeType('date')"> 日期段（甘特）</label>
-        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="radio" name="ttype" value="both" id="tt-both" onchange="setTimeType('both')"> 兩者都有</label>
-      </div>
-      <div id="time-inputs" style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-        <input id="ev-ts" type="datetime-local" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
-        <span style="color:var(--text3)">→</span>
-        <input id="ev-te" type="datetime-local" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
-      </div>
-      <div id="date-inputs" style="display:none;align-items:center;gap:6px">
+      <label>📅 日期 <span style="color:var(--red)">*</span></label>
+      <div id="date-inputs" style="display:flex;align-items:center;gap:6px">
         <input id="ev-ds" type="date" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
         <span style="color:var(--text3)">→</span>
         <input id="ev-de" type="date" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
       </div>
+      <div class="hint" style="margin-top:4px">💡 <b>單日</b>事件顯示為文字方塊；<b>跨天</b>事件顯示為甘特色條（第一天有文字，後續延伸色條，固定在格子頂部）</div>
     </div>
-    <!-- Notif -->
-    <div class="toggle-row">
-      <button class="tog off" id="notif-tog" onclick="toggleTog(this)"></button>
-      <label onclick="toggleTog(document.getElementById('notif-tog'))">開啟通知</label>
-      <div id="notif-opts" style="display:none;margin-left:auto">
-        <select id="notif-before" style="padding:4px 8px;border:1px solid var(--border2);border-radius:6px;font-size:12px">
-          <option value="0">準時</option><option value="5">5分前</option><option value="10">10分前</option>
-          <option value="15" selected>15分前</option><option value="30">30分前</option>
-          <option value="60">1小時前</option><option value="1440">1天前</option><option value="2880">2天前</option>
-        </select>
+
+    <!-- 🕐 指定時間（選填，展開式） -->
+    <div class="toggle-row" style="margin-bottom:6px">
+      <button class="tog off" id="time-tog" onclick="toggleTog(this)"></button>
+      <label onclick="toggleTog(document.getElementById('time-tog'))">🕐 指定時間（選填）</label>
+      <span style="font-size:11px;color:var(--text3);margin-left:auto">例：會議 10:00–11:00</span>
+    </div>
+    <div id="time-inputs" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <input id="ev-ts" type="datetime-local" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+        <span style="color:var(--text3)">→</span>
+        <input id="ev-te" type="datetime-local" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
       </div>
+      <div class="hint" style="margin-top:6px">有指定時間的事件，月曆上會在標題前顯示時間（如 10:00 會議）</div>
+    </div>
+
+    <!-- 🔔 通知（選填，展開式） -->
+    <div class="toggle-row" style="margin-bottom:6px">
+      <button class="tog off" id="notif-tog" onclick="toggleTog(this)"></button>
+      <label onclick="toggleTog(document.getElementById('notif-tog'))">🔔 通知（選填，預設關閉）</label>
+    </div>
+    <div id="notif-opts" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:12px">
+      <div class="row2" style="margin-bottom:0">
+        <div class="field" style="margin-bottom:0">
+          <label>當天幾點通知</label>
+          <input id="notif-time" type="time" value="09:00" style="width:100%;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>要提早多久</label>
+          <select id="notif-before" style="width:100%;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
+            <option value="0" selected>當天準時</option><option value="5">5分鐘前</option><option value="10">10分鐘前</option>
+            <option value="15">15分鐘前</option><option value="30">30分鐘前</option>
+            <option value="60">1小時前</option><option value="1440">1天前</option><option value="2880">2天前</option>
+          </select>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:6px">📌 範例：通知時間 09:00 + 提早 1 天 = <b>前一天早上 9 點</b>提醒你<br>📌 若上方有「指定時間」，通知會依事件時間計算，此處的通知時間不生效</div>
     </div>
     <!-- Recur -->
     <div class="toggle-row">
@@ -738,6 +769,7 @@ let activeFilter=new Set();
 let curYear,curMonth,curView='month';
 let editId=null,impData=null,editCatId=null;
 let saveScope='one'; // 'one' | 'after' | 'all'
+let _curNotifTime='09:00'; // genRecur 產生事件時使用的通知時間
 let delScope='one';  // 'one' | 'after' | 'all'
 let ncColor=PALETTE[0],ecColor=PALETTE[0];
 let acIdx=-1;
@@ -751,7 +783,7 @@ function init(){
   const n=new Date();curYear=n.getFullYear();curMonth=n.getMonth();
   activeFilter=new Set(cats.map(c=>c.id));
   buildSidebar();buildCatSelects();buildNcColors();setView('month');
-  requestNotifPerm();setInterval(checkNotifs,60000);
+  requestNotifPerm();setInterval(checkNotifs,30000); // 每30秒檢查，避免跳過通知時間點
   setupDelegation();
 }
 
@@ -820,8 +852,9 @@ function toggleTog(btn){
   const on=btn.classList.contains('off');
   btn.className='tog '+(on?'on':'off');
   // side effects
-  if(btn.id==='notif-tog') document.getElementById('notif-opts').style.display=on?'flex':'none';
+  if(btn.id==='notif-tog') document.getElementById('notif-opts').style.display=on?'block':'none';
   if(btn.id==='recur-tog') document.getElementById('recur-panel').style.display=on?'block':'none';
+  if(btn.id==='time-tog') document.getElementById('time-inputs').style.display=on?'block':'none';
 }
 function toggleShowTime(){
   showTime=!showTime;
@@ -940,26 +973,40 @@ function renderMonth(){
       if(cusHday)html+=`<div class="hday-label custom">${cusHday}</div>`;
     }
 
-    // ── 甘特區：固定在格子頂部（日期段事件，無時間） ──
-    const ganttEvs=visibleEventsOnDate(ds).filter(e=>e.dateStart&&!e.timeStart);
+    // ── 甘特區：只有「跨天」事件才顯示色條（第一天有文字+勾選框） ──
+    const allDayEvs=visibleEventsOnDate(ds);
+    const ganttEvs=allDayEvs.filter(e=>e.dateStart&&(e.dateEnd&&e.dateEnd!==e.dateStart));
     if(ganttEvs.length){
       html+=`<div class="gantt-zone">`;
       ganttEvs.forEach(ev=>{
         const col=evColor(ev);
         const isStart=ev.dateStart===ds;
         const isEnd=(ev.dateEnd||ev.dateStart)===ds;
-        // 連續色條：起點左圓角，終點右圓角，中間延伸到邊緣
+        const isWeekStart=new Date(ds+'T00:00').getDay()===0; // 週日重新顯示文字
         const ml=isStart?'2px':'-3px';
         const mr=isEnd?'2px':'-3px';
         const br=`${isStart?'4px':'0'} ${isEnd?'4px':'0'} ${isEnd?'4px':'0'} ${isStart?'4px':'0'}`;
-        html+=`<div class="gantt-bar-row" style="background:${col.bg};margin-left:${ml};margin-right:${mr};border-radius:${br}" data-evid="${ev.id}" data-action="open" title="${ev.title}"></div>`;
+        // 第一天或每週第一格顯示文字（Google 日曆風格）
+        const showText=isStart||isWeekStart;
+        const chkHtml=isStart?`<span class="gbar-chk${ev.done?' on':''}" data-evid="${ev.id}" data-action="done"></span>`:'';
+        const textHtml=showText?`<span class="gbar-text" style="color:${col.text}">${ev.title}</span>`:'';
+        html+=`<div class="gantt-bar-row${ev.done?' done':''}" style="background:${col.bg};margin-left:${ml};margin-right:${mr};border-radius:${br}" data-evid="${ev.id}" data-action="open">${chkHtml}${textHtml}</div>`;
       });
       html+=`</div>`;
     }
 
     // ── 事件區：文字事件在甘特下方 ──
     html+=`<div class="ev-zone">`;
-    const timeEvs=visibleEventsOnDate(ds).filter(e=>e.timeStart&&!e.dateStart);
+    // 單日無時間事件 → 一般文字 chip（無時間前綴）
+    const singleDayEvs=allDayEvs.filter(e=>e.dateStart&&(!e.dateEnd||e.dateEnd===e.dateStart)&&!e.timeStart);
+    singleDayEvs.forEach(ev=>{
+      const col=evColor(ev);
+      html+=`<div class="echip-wrap">
+        <span class="echip-chk${ev.done?' on':''}" data-evid="${ev.id}" data-action="done"></span>
+        <div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" data-evid="${ev.id}" data-action="open">
+        <span class="etitle">${ev.title}</span></div></div>`;
+    });
+    const timeEvs=allDayEvs.filter(e=>e.timeStart&&!e.dateStart);
     timeEvs.slice(0,3).forEach(ev=>{
       const col=evColor(ev);
       const time=showTime&&ev.timeStart?ev.timeStart.slice(11,16):'';
@@ -971,7 +1018,7 @@ function renderMonth(){
         ${notifDot}${time?`<span class="etime">${time}</span>`:''}
         <span class="etitle">${ev.title}</span></div></div>`;
     });
-    const bothEvs=visibleEventsOnDate(ds).filter(e=>e.timeStart&&e.dateStart);
+    const bothEvs=allDayEvs.filter(e=>e.timeStart&&e.dateStart);
     bothEvs.forEach(ev=>{
       const col=evColor(ev);
       const time=showTime&&ev.timeStart?ev.timeStart.slice(11,16):'';
@@ -981,7 +1028,7 @@ function renderMonth(){
         ${time?`<span class="etime">${time}</span>`:''}
         <span class="etitle">${ev.title}</span></div></div>`;
     });
-    if((timeEvs.length+bothEvs.length)>3)html+=`<div class="more-lnk" data-action="list">＋${(timeEvs.length+bothEvs.length)-3}</div>`;
+    if((timeEvs.length+bothEvs.length+singleDayEvs.length)>4)html+=`<div class="more-lnk" data-action="list">＋更多</div>`;
     html+=`</div>`;
 
     html+=`</div>`;
@@ -1148,8 +1195,11 @@ function updateAutoId(){
 // TIME TYPE
 // ══════════════════════════════════════════════
 function setTimeType(t){
-  document.getElementById('time-inputs').style.display=(t==='time'||t==='both')?'flex':'none';
-  document.getElementById('date-inputs').style.display=(t==='date'||t==='both')?'flex':'none';
+  // 保留舊 API：'time'/'both' = 開啟時間 toggle，'date' = 關閉
+  const timeTog=document.getElementById('time-tog');
+  const showTime=(t==='time'||t==='both');
+  timeTog.className='tog '+(showTime?'on':'off');
+  document.getElementById('time-inputs').style.display=showTime?'block':'none';
 }
 
 // ══════════════════════════════════════════════
@@ -1223,12 +1273,10 @@ function openEvModal(id,dateStr){
   const dt=document.getElementById('done-tog');
   dt.className='tog '+(ev?.done?'on':'off');
 
-  // time type
-  const hasTime=ev?!!ev.timeStart:true;
-  const hasDate=ev?!!ev.dateStart:false;
-  const ttype=hasTime&&hasDate?'both':hasDate?'date':'time';
-  document.querySelector(`input[name=ttype][value=${ttype}]`).checked=true;
-  setTimeType(ttype);
+  // 時間 toggle：有 timeStart 才開
+  const hasTime=ev?!!ev.timeStart:false;
+  document.getElementById('time-tog').className='tog '+(hasTime?'on':'off');
+  document.getElementById('time-inputs').style.display=hasTime?'block':'none';
   if(ev){
     if(ev.timeStart)document.getElementById('ev-ts').value=ev.timeStart;
     if(ev.timeEnd)document.getElementById('ev-te').value=ev.timeEnd;
@@ -1244,8 +1292,9 @@ function openEvModal(id,dateStr){
   // notif
   const nt=document.getElementById('notif-tog');
   nt.className='tog '+(ev?.notif?'on':'off');
-  document.getElementById('notif-opts').style.display=ev?.notif?'flex':'none';
-  document.getElementById('notif-before').value=ev?.notifBefore||15;
+  document.getElementById('notif-opts').style.display=ev?.notif?'block':'none';
+  document.getElementById('notif-before').value=ev?.notifBefore||0;
+  document.getElementById('notif-time').value=ev?.notifTime||'09:00';
 
   // recur
   const rec=ev?.recurId?recurs.find(r=>r.id===ev.recurId):null;
@@ -1338,12 +1387,25 @@ function saveEvent(){
   const done=document.getElementById('done-tog').classList.contains('on');
   const notif=document.getElementById('notif-tog').classList.contains('on');
   const notifBefore=notif?parseInt(document.getElementById('notif-before').value):0;
-  const ttype=document.querySelector('input[name=ttype]:checked').value;
-  const timeStart=(ttype==='time'||ttype==='both')?document.getElementById('ev-ts').value:null;
-  const timeEnd=(ttype==='time'||ttype==='both')?document.getElementById('ev-te').value:null;
-  const dateStart=(ttype==='date'||ttype==='both')?document.getElementById('ev-ds').value:null;
-  const dateEnd=(ttype==='date'||ttype==='both')?document.getElementById('ev-de').value:null;
-  if(!timeStart&&!dateStart)return toast('請填寫時間或日期','err');
+  const notifTime=notif?(document.getElementById('notif-time').value||'09:00'):null;
+  _curNotifTime=notifTime;
+  const hasTimeTog=document.getElementById('time-tog').classList.contains('on');
+  const timeStart=hasTimeTog?document.getElementById('ev-ts').value:null;
+  const timeEnd=hasTimeTog?document.getElementById('ev-te').value:null;
+  // 日期為必填
+  const dsVal=document.getElementById('ev-ds').value;
+  const deVal=document.getElementById('ev-de').value;
+  // 有指定時間 → 用時間為主，日期若同一天可省略 dateStart（避免甘特+文字重複顯示）
+  // 邏輯：時間開 → timeStart/timeEnd；日期不同天仍存 dateStart/dateEnd（both 效果）
+  let dateStart=null,dateEnd=null;
+  if(!hasTimeTog){
+    dateStart=dsVal||null;
+    dateEnd=deVal||dsVal||null;
+  } else {
+    // 有時間：若日期範圍是跨天，額外存日期段（兩者都有）
+    if(dsVal&&deVal&&dsVal!==deVal){dateStart=dsVal;dateEnd=deVal;}
+  }
+  if(!timeStart&&!dateStart)return toast('請填寫日期','err');
 
   const oldEv=editId?events.find(e=>e.id===editId):null;
   const isRecurEdit=!!(oldEv&&oldEv.recurId);
@@ -1358,7 +1420,7 @@ function saveEvent(){
     if(scope==='one'){
       // 只改這一筆：從系列獨立（recurId 清空）
       const idx=events.findIndex(e=>e.id===editId);
-      if(idx>=0) events[idx]={...events[idx],title,cat,subcat,done,timeStart:timeStart||null,timeEnd:timeEnd||null,dateStart:dateStart||null,dateEnd:dateEnd||null,notif,notifBefore,note,recurId:null};
+      if(idx>=0) events[idx]={...events[idx],title,cat,subcat,done,timeStart:timeStart||null,timeEnd:timeEnd||null,dateStart:dateStart||null,dateEnd:dateEnd||null,notif,notifBefore,notifTime,note,recurId:null};
       toast('已更新（只改這一筆，已從系列獨立）','ok');
 
     } else if(scope==='after'){
@@ -1423,7 +1485,7 @@ function saveEvent(){
     genRecur(recurId,title,cat,subcat,timeStart,dateStart,notif,notifBefore,note,interval,unit,holiday,until,count);
   }
   const newId=document.getElementById('ev-id').value||('EV-'+Date.now());
-  const ev={id:newId,title,cat,subcat,done,timeStart:timeStart||null,timeEnd:timeEnd||null,dateStart:dateStart||null,dateEnd:dateEnd||null,notif,notifBefore,note,recurId};
+  const ev={id:newId,title,cat,subcat,done,timeStart:timeStart||null,timeEnd:timeEnd||null,dateStart:dateStart||null,dateEnd:dateEnd||null,notif,notifBefore,notifTime,note,recurId};
   if(editId){const idx=events.findIndex(e=>e.id===editId);if(idx>=0)events[idx]=ev;}
   else events.push(ev);
   save();closeEvModal();buildSidebar();renderCurrent();
@@ -1456,7 +1518,7 @@ function genRecurFrom(recurId,title,cat,subcat,timeStart,dateStart,timeEnd,notif
     const next=(nums.length?Math.max(...nums):0)+1;
     const newId=`${prefix}-${String(next).padStart(3,'0')}`;
     const newTs=timeStart?ds+timeStart.slice(10):null;
-    events.push({id:newId,title,cat,subcat,done:false,timeStart:newTs,timeEnd:timeEnd||null,dateStart:dateStart?ds:null,dateEnd:dateStart?ds:null,notif,notifBefore,note,recurId});
+    events.push({id:newId,title,cat,subcat,done:false,timeStart:newTs,timeEnd:timeEnd||null,dateStart:dateStart?ds:null,dateEnd:dateStart?ds:null,notif,notifBefore,notifTime:_curNotifTime,note,recurId});
     gen++;
   }
 }
@@ -1479,7 +1541,7 @@ function genRecur(recurId,title,cat,subcat,timeStart,dateStart,notif,notifBefore
       const next=(nums.length?Math.max(...nums):0)+1;
       const newId=`${prefix}-${String(next).padStart(3,'0')}`;
       const newTs=timeStart?ds+timeStart.slice(10):null;
-      events.push({id:newId,title,cat,subcat,done:false,timeStart:newTs,timeEnd:null,dateStart:dateStart?ds:null,dateEnd:dateStart?ds:null,notif,notifBefore,note,recurId});
+      events.push({id:newId,title,cat,subcat,done:false,timeStart:newTs,timeEnd:null,dateStart:dateStart?ds:null,dateEnd:dateStart?ds:null,notif,notifBefore,notifTime:_curNotifTime,note,recurId});
     }
     gen++;
   }
@@ -1613,21 +1675,59 @@ document.addEventListener('click',e=>{
 // NOTIFICATIONS
 // ══════════════════════════════════════════════
 function requestNotifPerm(){if('Notification'in window&&Notification.permission==='default')Notification.requestPermission();}
+// 已發過通知的 key（避免同一分鐘重複發）
+const _notifSent=new Set();
+
 function checkNotifs(){
   const now=new Date();
+  const nowMin=Math.floor(now.getTime()/60000); // 以分鐘為單位的時間戳
+
   events.filter(ev=>ev.notif&&!ev.done).forEach(ev=>{
-    const t=new Date(ev.timeStart||ev.dateStart||'');
+    // 日期段事件用使用者設定的通知時間（預設 09:00）
+    let t;
+    if(ev.dateStart&&!ev.timeStart){
+      t=new Date(ev.dateStart+'T'+(ev.notifTime||'09:00'));
+    } else {
+      t=new Date(ev.timeStart||'');
+    }
     if(isNaN(t))return;
-    const diff=(t-now)/60000;
-    if(diff>=0&&Math.abs(diff-ev.notifBefore)<1)sendNotif(ev);
+
+    // 計算「應該通知的時間點」= 事件時間 - 提前量
+    const notifyAt=new Date(t.getTime()-ev.notifBefore*60000);
+    const notifyMin=Math.floor(notifyAt.getTime()/60000);
+
+    // 在「應通知分鐘」的那一分鐘內（±1 分鐘容差），且還沒發過
+    const key=ev.id+'-'+notifyMin;
+    if(Math.abs(nowMin-notifyMin)<=1&&!_notifSent.has(key)){
+      _notifSent.add(key);
+      sendNotif(ev);
+      // 只保留最近 200 筆，避免 Set 無限增長
+      if(_notifSent.size>200){
+        const first=_notifSent.values().next().value;
+        _notifSent.delete(first);
+      }
+    }
   });
 }
+
 function checkNotifsManual(){
-  const soon=new Date(Date.now()+2*60000);
-  const ev=events.filter(ev=>ev.notif&&!ev.done).find(ev=>{
-    const t=new Date(ev.timeStart||ev.dateStart||'');return!isNaN(t)&&t>new Date()&&t<soon;
+  // 手動測試：發送「接下來 N 分鐘內」應通知的事件（N 可自訂）
+  const mins=parseInt(document.getElementById('test-notif-min')?.value)||60;
+  const now=new Date();
+  const inN=new Date(now.getTime()+mins*60000);
+  const found=events.filter(ev=>{
+    if(!ev.notif||ev.done)return false;
+    let t=ev.dateStart&&!ev.timeStart?new Date(ev.dateStart+'T'+(ev.notifTime||'09:00')):new Date(ev.timeStart||'');
+    if(isNaN(t))return false;
+    const notifyAt=new Date(t.getTime()-ev.notifBefore*60000);
+    return notifyAt>=now&&notifyAt<=inN;
   });
-  if(ev)sendNotif(ev);else toast('找不到2分鐘內的通知事件，請新增一個測試用事件（時間設為現在+2分鐘，開啟通知）');
+  if(found.length){
+    found.forEach(ev=>sendNotif(ev));
+    toast(`🔔 測試發送 ${found.length} 則通知（${mins}分鐘內）`,'ok');
+  } else {
+    toast(`接下來 ${mins} 分鐘內沒有待通知事件`,'err');
+  }
 }
 function sendNotif(ev){
   const msg=`📅 ${ev.title} ${ev.notifBefore?fmtNotif(ev.notifBefore)+'提醒':'現在開始'}`;
