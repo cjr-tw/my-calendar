@@ -445,7 +445,7 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
           <div class="field" style="margin-bottom:0"><label>停止日期</label><input id="ru2" type="date" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);width:100%"></div>
           <div class="field" style="margin-bottom:0"><label>最多次數</label><input id="rc" type="number" min="1" placeholder="不限" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);width:100%"></div>
         </div>
-        <div class="hint" style="margin-top:6px">每月5號範例：間隔1月，遇假日延後</div>
+        <div class="hint" style="margin-top:6px">💡「遇假日」會自動避開<b>週末、台灣國定假日、你自訂的假日</b>，遇連假會一路推到下一個工作日（補班日視為工作日）</div>
       </div>
     </div>
     <div class="field">
@@ -539,7 +539,7 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <input id="new-hday-name" type="text" placeholder="假日名稱" style="flex:1;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);min-width:80px">
         <input id="new-hday-date" type="date" style="padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius)">
-        <input id="new-hday-repeat" type="checkbox" id="new-hday-repeat" style="accent-color:var(--blue)">
+        <input id="new-hday-repeat" type="checkbox" style="accent-color:var(--blue)">
         <label for="new-hday-repeat" style="font-size:12px;color:var(--text2);cursor:pointer">每年重複</label>
         <button class="tbtn primary" onclick="addCustomHoliday()">＋ 新增</button>
       </div>
@@ -749,6 +749,33 @@ function isMakeupDay(ds){
   const y=d.getFullYear();
   return(TW_MAKEUP_DAYS[y]||[]).includes(ds);
 }
+// ── 判斷某天是否為「非工作日」（週末 / 國定假日 / 自訂假日）──
+// 補班日視為工作日（即使是週末）
+function isNonWorkingDay(ds){
+  if(isMakeupDay(ds))return false;              // 補班日 = 要上班
+  if(getCustomHolidayName(ds))return true;       // 自訂假日
+  const tw=getTWHolidayName(ds);
+  if(tw&&tw!=='__makeup__')return true;          // 國定假日
+  const dow=new Date(ds+'T00:00').getDay();
+  return dow===0||dow===6;                       // 週末
+}
+
+// ── 遇假日調整：逐日推進直到工作日（可處理連假）──
+// mode: 'keep' 不調整 | 'after' 延後 | 'before' 提前
+function adjustForHoliday(d,mode){
+  if(mode==='keep')return d;
+  const step=mode==='after'?1:-1;
+  const adj=new Date(d);
+  let guard=0;
+  while(guard<30){
+    const ds=adj.toISOString().slice(0,10);
+    if(!isNonWorkingDay(ds))break;               // 找到工作日
+    adj.setDate(adj.getDate()+step);
+    guard++;
+  }
+  return adj;
+}
+
 function getCustomHolidayName(ds){
   const d=new Date(ds+'T00:00');
   const mStr=String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -1588,7 +1615,7 @@ function genRecurFrom(recurId,title,cat,subcat,timeStart,dateStart,timeEnd,notif
     else{cur=new Date(base);gen=0;includeFrom=false;}
     if(cur>stop)break;
     let adj=new Date(cur);
-    if(holiday!=='keep'){const dow=adj.getDay();if(dow===0)adj.setDate(adj.getDate()+(holiday==='after'?1:-2));if(dow===6)adj.setDate(adj.getDate()+(holiday==='after'?2:-1));}
+    adj=adjustForHoliday(adj,holiday);
     const ds=adj.toISOString().slice(0,10);
     if(new Date(ds)<new Date(fromDate)&&!includeFrom){gen++;continue;}
     const existing2=events.filter(e=>e.id?.startsWith(prefix+'-'));
@@ -1617,7 +1644,7 @@ function genRecur(recurId,title,cat,subcat,timeStart,dateStart,notif,notifBefore
   while(gen<max){
     addUnit(cur,interval,unit);if(cur>stop)break;
     let adj=new Date(cur);
-    if(holiday!=='keep'){const dow=adj.getDay();if(dow===0)adj.setDate(adj.getDate()+(holiday==='after'?1:-2));if(dow===6)adj.setDate(adj.getDate()+(holiday==='after'?2:-1));}
+    adj=adjustForHoliday(adj,holiday);
     const ds=adj.toISOString().slice(0,10);
     if(!events.some(e=>e.recurId===recurId&&(e.dateStart===ds||e.timeStart?.startsWith(ds)))){
       const existing=events.filter(e=>e.id?.startsWith(prefix+'-'));
@@ -2099,7 +2126,7 @@ function toggleTWHoliday(btn){
   showTWHolidays=on;
   document.getElementById('tw-holiday-list').style.display=on?'block':'none';
   if(on)refreshTWDaysList();
-  save();
+  save();renderCurrent();
 }
 function refreshTWDaysList(){
   const el=document.getElementById('tw-days-list');
@@ -2143,11 +2170,11 @@ function addCustomHoliday(){
   customHolidays.push({name,date,repeat});
   document.getElementById('new-hday-name').value='';
   document.getElementById('new-hday-date').value='';
-  save();refreshCustomDaysList();toast('自訂假日已新增','ok');
+  save();refreshCustomDaysList();renderCurrent();toast('自訂假日已新增','ok');
 }
 function delCustomHoliday(i){
   customHolidays.splice(i,1);
-  save();refreshCustomDaysList();toast('已刪除','ok');
+  save();refreshCustomDaysList();renderCurrent();toast('已刪除','ok');
 }
 
 // ══════════════════════════════════════════════
