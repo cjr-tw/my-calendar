@@ -669,15 +669,7 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
 // DATA
 // ══════════════════════════════════════════════
 const PALETTE=['#2563eb','#7c3aed','#059669','#dc2626','#d97706','#0891b2','#db2777','#65a30d','#ea580c','#6b7280','#1d4ed8','#7e22ce','#047857','#991b1b','#854F0B'];
-let cats=[ // {id,name,bg,text,parentId,order}
-  {id:'work',name:'工作',bg:'#2563eb',text:'#fff',parentId:null,order:0},
-  {id:'work-meet',name:'會議',bg:'#1d4ed8',text:'#fff',parentId:'work',order:0},
-  {id:'family',name:'家庭',bg:'#059669',text:'#fff',parentId:null,order:1},
-  {id:'personal',name:'個人',bg:'#7c3aed',text:'#fff',parentId:null,order:2},
-  {id:'health',name:'健康',bg:'#dc2626',text:'#fff',parentId:null,order:3},
-  {id:'task',name:'待辦',bg:'#d97706',text:'#fff',parentId:null,order:4},
-  {id:'task-insurance',name:'公保',bg:'#b45309',text:'#fff',parentId:'task',order:0},
-];
+let cats=[]; // {id,name,bg,text,parentId,order} — 預設為空，由使用者自行建立
 let events=[];
 let recurs=[];
 let customHolidays=[]; // {name, date, repeat}
@@ -871,6 +863,14 @@ function toggleShowTime(){
 // ══════════════════════════════════════════════
 function buildSidebar(){
   const el=document.getElementById('cat-filter');el.innerHTML='';
+  if(!cats.length){
+    el.innerHTML=`<div style="padding:10px 8px;text-align:center">
+      <div style="font-size:20px;margin-bottom:6px;opacity:.5">🏷</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.5">還沒有任何類別<br><span style="font-size:11px;color:var(--text3)">請先建立類別才能新增事件</span></div>
+      <button class="tbtn primary" style="width:100%;font-size:11px;padding:5px 8px" onclick="openCatMgr()">＋ 建立第一個類別</button>
+    </div>`;
+    return;
+  }
   parentCats().forEach(pc=>{
     const subs=subCats(pc.id);
     const row=makeCatRow(pc,false);el.appendChild(row);
@@ -965,6 +965,20 @@ function renderMonth(){
   const mn=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
   document.getElementById('mlabel').textContent=`${curYear} ${mn[curMonth]}`;
   const wrap=document.getElementById('cal-wrap');
+  // 無類別時顯示引導畫面
+  if(!cats.length){
+    wrap.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:340px;padding:30px;text-align:center">
+      <div style="font-size:40px;margin-bottom:12px;opacity:.35">🏷</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:6px">開始使用前，請先建立類別</div>
+      <div style="font-size:13px;color:var(--text2);max-width:340px;line-height:1.7;margin-bottom:16px">
+        類別用來分類你的事件並設定顯示顏色。<br>
+        例如「工作」、「公保」、「重要且緊急」等，可依需求自訂。
+      </div>
+      <button class="tbtn primary" onclick="openCatMgr()">🏷 建立第一個類別</button>
+      <div style="font-size:11px;color:var(--text3);margin-top:14px">若你之前有匯出的備份，也可以直接<a href="#" onclick="event.preventDefault();openImport()" style="color:var(--blue)">匯入 JSON 還原</a></div>
+    </div>`;
+    return;
+  }
   const first=new Date(curYear,curMonth,1).getDay();
   const days=new Date(curYear,curMonth+1,0).getDate();
   const prevDays=new Date(curYear,curMonth,0).getDate();
@@ -1281,6 +1295,12 @@ function pickAC(title){document.getElementById('ev-title').value=title;document.
 // EVENT MODAL
 // ══════════════════════════════════════════════
 function openEvModal(id,dateStr){
+  // 無類別時無法新增事件，引導使用者先建立
+  if(!cats.length){
+    toast('請先建立至少一個類別，才能新增事件','err');
+    setTimeout(()=>openCatMgr(),400);
+    return;
+  }
   editId=id;
   const ev=id?events.find(e=>e.id===id):null;
   document.getElementById('ev-mtitle').textContent=ev?'編輯事件':'新增事件';
@@ -1641,6 +1661,16 @@ function openCatMgr(){refreshCatMgrList();buildCatSelects();buildNcColors();docu
 function closeCatMgr(){document.getElementById('cat-overlay').classList.remove('open');buildSidebar();buildCatSelects();renderCurrent();}
 function refreshCatMgrList(){
   const el=document.getElementById('catmgr-list');el.innerHTML='';
+  if(!cats.length){
+    el.innerHTML=`<div style="background:var(--blue-bg);border:1px solid #bfdbfe;border-radius:var(--radius);padding:12px 14px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;color:#1d4ed8;margin-bottom:6px">👋 歡迎使用行事曆</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.6">
+        請先在下方建立你的第一個類別，例如「工作」、「會議」、「公保」等。<br>
+        建立母類別後，可以再新增子類別做更細的分類（例如公保 → 公保費、晉級）。
+      </div>
+    </div>`;
+    return;
+  }
   parentCats().forEach(pc=>{
     el.appendChild(makeCatMgrRow(pc,false));
     subCats(pc.id).forEach(sc=>el.appendChild(makeCatMgrRow(sc,true)));
@@ -1894,6 +1924,11 @@ function doImport(){
 // EXCEL IMPORT
 // ══════════════════════════════════════════════
 function openExcelImport(){
+  if(!cats.length){
+    toast('請先建立至少一個類別，才能匯入事件','err');
+    setTimeout(()=>openCatMgr(),400);
+    return;
+  }
   document.getElementById('excel-overlay').classList.add('open');
   document.getElementById('excel-body').innerHTML='';
   addExcelRow();addExcelRow();addExcelRow();
