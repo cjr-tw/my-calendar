@@ -240,12 +240,24 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
 .recur-panel h4{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
 
 /* ── Print ── */
+/* 列印容器：畫面上隱藏，列印時才顯示 */
+#print-area{display:none}
+.print-month{margin-bottom:18px}
+.print-month-title{font-size:15px;font-weight:700;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #333}
+
 @media print{
-  .topbar,.sidebar,.cal-header,.overlay,.toast-container{display:none!important}
-  .main,.content,.app{display:block!important;height:auto!important;overflow:visible!important}
-  .cal-wrap,.list-view,.year-view{overflow:visible!important;height:auto!important}
-  .month-grid{page-break-inside:avoid}
-  body{background:#fff}
+  /* 隱藏所有畫面元素，只留列印容器 */
+  .app,.overlay,.toast-container{display:none!important}
+  #print-area{display:block!important}
+  .print-month{page-break-inside:avoid;break-inside:avoid;page-break-after:always;break-after:page}
+  .print-month:last-child{page-break-after:auto;break-after:auto}
+  .month-grid{page-break-inside:avoid;break-inside:avoid;min-width:0!important}
+  body{background:#fff;margin:0;padding:8mm}
+  /* 確保底色與顏色能印出來 */
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .dcell{min-height:74px!important}
+  .dh{position:static!important}
+  @page{size:A4 landscape;margin:8mm}
 }
 .print-overlay{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:800;display:none;align-items:center;justify-content:center}
 .print-overlay.open{display:flex}
@@ -656,7 +668,8 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
         <option value="50">50%</option>
       </select>
     </div>
-    <div class="toggle-row"><input type="checkbox" id="pr-color" checked><label for="pr-color" style="font-size:13px">保留顏色</label></div>
+    <div class="toggle-row"><input type="checkbox" id="pr-color" checked><label for="pr-color" style="font-size:13px">保留顏色（底色與類別顏色）</label></div>
+    <div class="hint">📄 每個月份印在獨立頁面，橫向 A4。選「符合頁面」會依月份數量自動縮放；一次最多 24 個月。</div>
   </div>
   <div class="mfoot"><div class="spacer"></div><button class="tbtn" onclick="closePrint()">取消</button><button class="tbtn primary" onclick="doPrint()">🖨 列印</button></div>
 </div>
@@ -1006,14 +1019,25 @@ function renderMonth(){
     </div>`;
     return;
   }
-  const first=new Date(curYear,curMonth,1).getDay();
-  const days=new Date(curYear,curMonth+1,0).getDate();
-  const prevDays=new Date(curYear,curMonth,0).getDate();
+  wrap.innerHTML=buildMonthGridHTML(curYear,curMonth,false);
+}  // end renderMonth
+
+// ══════════════════════════════════════════════
+// 產生單一月份的月曆 HTML（畫面 & 列印共用）
+// forPrint=true 時：顯示全部事件（不截斷）、移除互動屬性
+// ══════════════════════════════════════════════
+function buildMonthGridHTML(yr,mo,forPrint){
+  const first=new Date(yr,mo,1).getDay();
+  const days=new Date(yr,mo+1,0).getDate();
+  const prevDays=new Date(yr,mo,0).getDate();
   const today=new Date();
   let cells=[];
-  for(let i=0;i<first;i++)cells.push({d:prevDays-first+1+i,m:curMonth-1,y:curYear,other:true});
-  for(let i=1;i<=days;i++)cells.push({d:i,m:curMonth,y:curYear,other:false});
-  while(cells.length<42)cells.push({d:cells.length-first-days+1,m:curMonth+1,y:curYear,other:true});
+  for(let i=0;i<first;i++)cells.push({d:prevDays-first+1+i,m:mo-1,y:yr,other:true});
+  for(let i=1;i<=days;i++)cells.push({d:i,m:mo,y:yr,other:false});
+  while(cells.length<42)cells.push({d:cells.length-first-days+1,m:mo+1,y:yr,other:true});
+
+  // 列印時不需要 data-action（避免誤觸），也不限制事件數量
+  const A=(s)=>forPrint?'':s;
 
   let html=`<div class="month-grid">`;
   ['日','一','二','三','四','五','六'].forEach(h=>html+=`<div class="dh">${h}</div>`);
@@ -1032,7 +1056,7 @@ function renderMonth(){
     if(!info.other&&(isHday||(isSun&&!isMakeup)))cellCls+=' holiday';
     else if(!info.other&&isSat&&!isMakeup)cellCls+=' weekend';
     if(cusHday)cellCls+=' custom-holiday';
-    html+=`<div class="${cellCls}" data-date="${ds}" data-action="newev">`;
+    html+=`<div class="${cellCls}" data-date="${ds}" ${A('data-action="newev"')}>`;
     html+=`<div class="dnum">${info.d}</div>`;
     // 假日名稱標籤
     if(!info.other){
@@ -1056,9 +1080,9 @@ function renderMonth(){
         const br=`${isStart?'4px':'0'} ${isEnd?'4px':'0'} ${isEnd?'4px':'0'} ${isStart?'4px':'0'}`;
         // 第一天或每週第一格顯示文字（Google 日曆風格）
         const showText=isStart||isWeekStart;
-        const chkHtml=isStart?`<span class="gbar-chk${ev.done?' on':''}" data-evid="${ev.id}" data-action="done"></span>`:'';
+        const chkHtml=isStart?`<span class="gbar-chk${ev.done?' on':''}" data-evid="${ev.id}" ${A('data-action="done"')}></span>`:'';
         const textHtml=showText?`<span class="gbar-text" style="color:${col.text}">${ev.title}</span>`:'';
-        html+=`<div class="gantt-bar-row${ev.done?' done':''}" style="background:${col.bg};margin-left:${ml};margin-right:${mr};border-radius:${br}" data-evid="${ev.id}" data-action="open">${chkHtml}${textHtml}</div>`;
+        html+=`<div class="gantt-bar-row${ev.done?' done':''}" style="background:${col.bg};margin-left:${ml};margin-right:${mr};border-radius:${br}" data-evid="${ev.id}" ${A('data-action="open"')}>${chkHtml}${textHtml}</div>`;
       });
       html+=`</div>`;
     }
@@ -1070,19 +1094,19 @@ function renderMonth(){
     singleDayEvs.forEach(ev=>{
       const col=evColor(ev);
       html+=`<div class="echip-wrap">
-        <span class="echip-chk${ev.done?' on':''}" data-evid="${ev.id}" data-action="done"></span>
-        <div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" data-evid="${ev.id}" data-action="open">
+        <span class="echip-chk${ev.done?' on':''}" data-evid="${ev.id}" ${A('data-action="done"')}></span>
+        <div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" data-evid="${ev.id}" ${A('data-action="open"')}>
         <span class="etitle">${ev.title}</span></div></div>`;
     });
     const timeEvs=allDayEvs.filter(e=>e.timeStart&&!e.dateStart);
-    timeEvs.slice(0,3).forEach(ev=>{
+    (forPrint?timeEvs:timeEvs.slice(0,3)).forEach(ev=>{
       const col=evColor(ev);
       const time=showTime&&ev.timeStart?ev.timeStart.slice(11,16):'';
       const notifDot=ev.notif?`<span class="enotif"></span>`:'';
       // chk 在 echip 外面，兩者並排，避免父子 data-action 衝突
       html+=`<div class="echip-wrap">
-        <span class="echip-chk${ev.done?' on':''}" data-evid="${ev.id}" data-action="done"></span>
-        <div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" data-evid="${ev.id}" data-action="open">
+        <span class="echip-chk${ev.done?' on':''}" data-evid="${ev.id}" ${A('data-action="done"')}></span>
+        <div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" data-evid="${ev.id}" ${A('data-action="open"')}>
         ${notifDot}${time?`<span class="etime">${time}</span>`:''}
         <span class="etitle">${ev.title}</span></div></div>`;
     });
@@ -1091,19 +1115,19 @@ function renderMonth(){
       const col=evColor(ev);
       const time=showTime&&ev.timeStart?ev.timeStart.slice(11,16):'';
       html+=`<div class="echip-wrap">
-        <span class="echip-chk${ev.done?' on':''}" data-evid="${ev.id}" data-action="done"></span>
-        <div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" data-evid="${ev.id}" data-action="open">
+        <span class="echip-chk${ev.done?' on':''}" data-evid="${ev.id}" ${A('data-action="done"')}></span>
+        <div class="echip${ev.done?' done':''}" style="background:${col.bg};color:${col.text}" data-evid="${ev.id}" ${A('data-action="open"')}>
         ${time?`<span class="etime">${time}</span>`:''}
         <span class="etitle">${ev.title}</span></div></div>`;
     });
-    if((timeEvs.length+bothEvs.length+singleDayEvs.length)>4)html+=`<div class="more-lnk" data-action="list">＋更多</div>`;
+    if(!forPrint&&(timeEvs.length+bothEvs.length+singleDayEvs.length)>4)html+=`<div class="more-lnk" data-action="list">＋更多</div>`;
     html+=`</div>`;
 
     html+=`</div>`;
   });
   html+=`</div>`;
-  wrap.innerHTML=html;
-}  // end renderMonth
+  return html;
+}
 
 // ══════════════════════════════════════════════
 // YEAR VIEW (Gantt style)
@@ -2095,18 +2119,80 @@ function doClear(){
 // ══════════════════════════════════════════════
 function openPrint(){
   const now=new Date();
-  document.getElementById('pr-from').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  document.getElementById('pr-to').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  // 預設帶入目前檢視的月份
+  const cm=`${curYear}-${String(curMonth+1).padStart(2,'0')}`;
+  document.getElementById('pr-from').value=cm;
+  document.getElementById('pr-to').value=cm;
   document.getElementById('print-overlay').classList.add('open');
 }
 function closePrint(){document.getElementById('print-overlay').classList.remove('open');}
+
 function doPrint(){
+  const fromVal=document.getElementById('pr-from').value;
+  const toVal=document.getElementById('pr-to').value;
   const scale=document.getElementById('pr-scale').value;
   const color=document.getElementById('pr-color').checked;
-  if(scale!=='auto')document.body.style.zoom=scale+'%';
-  if(!color){const s=document.createElement('style');s.id='noclr';s.textContent='*{filter:grayscale(1)!important}';document.head.appendChild(s);}
+
+  if(!fromVal||!toVal)return toast('請選擇起始與結束月份','err');
+
+  const [fy,fm]=fromVal.split('-').map(Number);
+  const [ty,tm]=toVal.split('-').map(Number);
+  let startY=fy,startM=fm-1,endY=ty,endM=tm-1;
+  // 若起始晚於結束，自動交換
+  if(startY*12+startM>endY*12+endM){
+    [startY,startM,endY,endM]=[endY,endM,startY,startM];
+  }
+  const totalMonths=(endY*12+endM)-(startY*12+startM)+1;
+  if(totalMonths>24)return toast('一次最多列印 24 個月','err');
+
+  // ── 建立列印容器，逐月產生月曆 ──
+  const mn=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+  let printHTML='';
+  let y=startY,m=startM;
+  for(let i=0;i<totalMonths;i++){
+    printHTML+=`<section class="print-month">
+      <h2 class="print-month-title">${y} 年 ${mn[m]}</h2>
+      ${buildMonthGridHTML(y,m,true)}
+    </section>`;
+    m++;if(m>11){m=0;y++;}
+  }
+
+  let container=document.getElementById('print-area');
+  if(!container){
+    container=document.createElement('div');
+    container.id='print-area';
+    document.body.appendChild(container);
+  }
+  container.innerHTML=printHTML;
+
+  // ── 套用列印設定 ──
+  document.body.classList.add('printing');
+  const styleEl=document.createElement('style');
+  styleEl.id='print-dynamic';
+  let css='';
+  if(scale!=='auto'){
+    css+=`@media print{#print-area{zoom:${scale}%}}`;
+  } else {
+    // 符合頁面：依月份數量自動縮放
+    const autoZoom=totalMonths>6?65:totalMonths>3?80:100;
+    css+=`@media print{#print-area{zoom:${autoZoom}%}}`;
+  }
+  if(!color){
+    css+=`@media print{#print-area *{filter:grayscale(1)!important}}`;
+  }
+  styleEl.textContent=css;
+  document.head.appendChild(styleEl);
+
   closePrint();
-  setTimeout(()=>{window.print();document.body.style.zoom='';const s=document.getElementById('noclr');if(s)s.remove();},300);
+  setTimeout(()=>{
+    window.print();
+    // 列印結束後清理
+    setTimeout(()=>{
+      document.body.classList.remove('printing');
+      const s=document.getElementById('print-dynamic');if(s)s.remove();
+      if(container)container.innerHTML='';
+    },500);
+  },350);
 }
 
 // ══════════════════════════════════════════════
