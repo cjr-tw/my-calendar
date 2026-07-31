@@ -91,9 +91,9 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
 .dcell:hover{background:#f0f4ff}
 .dcell.other{background:#fafbfc}
 .dcell.other .dnum{opacity:.28}
-.dcell.today .dnum{background:var(--blue);color:#fff;border-radius:50%}
+.dcell.today .dnum{background:var(--blue);color:#fff;border-radius:10px}
 .dcell.today{background:#f5f8ff}
-.dnum{width:21px;height:21px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;margin-bottom:2px;border-radius:50%}
+.dnum{min-width:21px;height:19px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;margin-bottom:2px;border-radius:10px;padding:0 6px;align-self:flex-start;white-space:nowrap;letter-spacing:-.01em}
 .dcell.holiday{background:#fff5f5}
 .dcell.holiday .dnum{color:#dc2626;font-weight:700}
 .dcell.weekend .dnum{color:#dc2626}
@@ -1032,9 +1032,17 @@ function buildMonthGridHTML(yr,mo,forPrint){
   const prevDays=new Date(yr,mo,0).getDate();
   const today=new Date();
   let cells=[];
-  for(let i=0;i<first;i++)cells.push({d:prevDays-first+1+i,m:mo-1,y:yr,other:true});
+  // 用 Date 物件正規化，避免月份溢位（-1 / 12）造成無效日期字串
+  for(let i=0;i<first;i++){
+    const dt=new Date(yr,mo-1,prevDays-first+1+i);
+    cells.push({d:dt.getDate(),m:dt.getMonth(),y:dt.getFullYear(),other:true});
+  }
   for(let i=1;i<=days;i++)cells.push({d:i,m:mo,y:yr,other:false});
-  while(cells.length<42)cells.push({d:cells.length-first-days+1,m:mo+1,y:yr,other:true});
+  let nextDay=1;
+  while(cells.length<42){
+    const dt=new Date(yr,mo+1,nextDay++);
+    cells.push({d:dt.getDate(),m:dt.getMonth(),y:dt.getFullYear(),other:true});
+  }
 
   // 列印時不需要 data-action（避免誤觸），也不限制事件數量
   const A=(s)=>forPrint?'':s;
@@ -1057,7 +1065,7 @@ function buildMonthGridHTML(yr,mo,forPrint){
     else if(!info.other&&isSat&&!isMakeup)cellCls+=' weekend';
     if(cusHday)cellCls+=' custom-holiday';
     html+=`<div class="${cellCls}" data-date="${ds}" ${A('data-action="newev"')}>`;
-    html+=`<div class="dnum">${info.d}</div>`;
+    html+=`<div class="dnum">${info.m+1}/${info.d}</div>`;
     // 假日名稱標籤
     if(!info.other){
       if(twHday&&twHday!=='__makeup__')html+=`<div class="hday-label">${twHday}</div>`;
